@@ -32,11 +32,13 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	if(nearestTarget.getId() != self.getId())
 	{
 		double distance = _self.getDistanceTo(nearestTarget);
-
+		
 		// ... и он в пределах досягаемости наших заклинаний, ...
 		if (distance <= _self.getCastRange())
 		{
+			//return;
 			_move.setSpeed(0);
+			
 			double angle = _self.getAngleTo(nearestTarget);
 
 			// ... то поворачиваемся к цели.
@@ -49,8 +51,10 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 				{
 					if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance < nearestTarget.getRadius() + 70)
 						_move.setAction(ActionType::ACTION_STAFF);
-					else
-					{
+					else if(self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE > 10])
+							_move.setAction(ActionType::ACTION_FIREBALL);
+					else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
+					{		
 						_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
 						_move.setCastAngle(angle);
 						_move.setMinCastDistance(distance - nearestTarget.getRadius() + game.getMagicMissileRadius());
@@ -240,27 +244,18 @@ LivingUnit & MyStrategy::getNearestTarget()
 	std::vector<LivingUnit *> targets;
 	targets.clear();
 	//LivingUnit =
-	for (auto i : world.getBuildings())
+	for(unsigned int i = 0; i < world.getBuildings().size(); i++)
 	{
-		targets.push_back(&i);
+		targets.push_back( new LivingUnit(world.getBuildings()[i] ));
 	}
-
-	for (auto i : world.getWizards())
+	for (unsigned int i = 0; i < world.getWizards().size(); i++)
 	{
-		targets.push_back(&i);
+		targets.push_back(new LivingUnit(world.getWizards()[i]));
 	}
-	for (auto i : world.getMinions())
+	for (unsigned int i = 0; i < world.getMinions().size(); i++)
 	{
-		//targets.push_back(&i);		
-		if ((&i)->getDistanceTo(self) < self.getCastRange());
-			targets.push_back(&i);
-	}
-	//int k = world.getMinions().size();
-	//if (k > 100)
-	//{
-	//	k = 0;
-	//}
-		
+		targets.push_back(new LivingUnit(world.getMinions()[i]));
+	}	
 
 	LivingUnit * unit = &self;
 	if (targets.size() == 0) return *unit;
