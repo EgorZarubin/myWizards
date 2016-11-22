@@ -22,13 +22,12 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	// Если осталось мало жизненной энергии, отступаем к предыдущей ключевой точке на линии.
 	if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR) {
 		goTo(getPreviousWaypoint(),_move);
-		return;
+		//return;
 	}
 
-	LivingUnit nearestTarget = getNearestTarget(); 
+	LivingUnit nearestTarget = getNearestTarget();
 
 	// Если видим противника ...
-	//if (&nearestTarget != nullptr)
 	if(nearestTarget.getId() != self.getId())
 	{
 		double distance = _self.getDistanceTo(nearestTarget);
@@ -43,7 +42,10 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 			// Если цель перед нами, ...
 			if (fabs(angle) < game.getStaffSector() / 2.0) {
 				// ... то атакуем.
-				_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
+				//if (nearestTarget.getLife() / nearestTarget.getMaxLife() > 0.5)
+				//	_move.setAction(ActionType::ACTION_FROST_BOLT);
+				//else
+					_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
 				_move.setCastAngle(angle);
 				_move.setMinCastDistance(distance - nearestTarget.getRadius() + game.getMagicMissileRadius());
 			}
@@ -204,15 +206,48 @@ void MyStrategy::goTo(Point2D & point, Move& _move)
 	//}
 }
 
+void MyStrategy::goBackward(Point2D & point, Move& _move)
+{
+	double angle = self.getAngleTo(point.getX(), point.getY());
+
+	_move.setTurn(angle+PI);
+
+	//if (fabs(angle) < game.getStaffSector() / 4.0) {
+	_move.setSpeed(-game.getWizardForwardSpeed());
+	//}
+}
+
 LivingUnit & MyStrategy::getNearestTarget()
 {
+
+	//std::map<long long, LivingUnit *> targets;	
+	//for (auto i : world.getBuildings())
+	//	targets.insert(std::pair<long long, LivingUnit *>(&i.getId(), &i));
+		
 	std::vector<LivingUnit *> targets;
+	targets.clear();
+	//LivingUnit =
 	for (auto i : world.getBuildings())
+	{
 		targets.push_back(&i);
+	}
+
 	for (auto i : world.getWizards())
+	{
 		targets.push_back(&i);
+	}
 	for (auto i : world.getMinions())
-		targets.push_back(&i);
+	{
+		//targets.push_back(&i);		
+		if ((&i)->getDistanceTo(self) < self.getCastRange());
+			targets.push_back(&i);
+	}
+	//int k = world.getMinions().size();
+	//if (k > 100)
+	//{
+	//	k = 0;
+	//}
+		
 
 	LivingUnit * unit = &self;
 	if (targets.size() == 0) return *unit;
@@ -249,7 +284,8 @@ LivingUnit & MyStrategy::getCloseAndWeakTarget()
 	for (auto i : world.getMinions())
 		targets.push_back(&i);
 
-	LivingUnit * unit = NULL;
+	LivingUnit * unit = &self;
+	if (targets.size() == 0) return *unit;
 
 	std::sort(targets.begin(), targets.end(),
 		[](LivingUnit* u1, LivingUnit* u2) {
@@ -257,14 +293,15 @@ LivingUnit & MyStrategy::getCloseAndWeakTarget()
 	});
 
 	auto it = targets.begin();
-	while ( ((*it)->getDistanceTo(self)) > self.getCastRange()  )
+	while (it != targets.end() && ( (*it)->getFaction() == self.getFaction() || ((*it)->getDistanceTo(self)) > self.getCastRange() ) )
 	{
 		it++;
 	}
-	unit = *it;
+	if (it != targets.end())
+		unit = *it;
 	return *unit;
 }
 
 MyStrategy::MyStrategy() {
-	LOW_HP_FACTOR = 0.4;
+	LOW_HP_FACTOR = 0.25;
 }

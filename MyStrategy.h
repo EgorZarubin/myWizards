@@ -34,6 +34,7 @@ protected:
 	Point2D getNextWaypoint();
 	Point2D getPreviousWaypoint();
 	void goTo(Point2D & point, model::Move& _move);
+	void goBackward(Point2D & point, model::Move& _move);
 	model::LivingUnit&  getNearestTarget();
 	model::LivingUnit&  getCloseAndWeakTarget();
 
