@@ -25,10 +25,11 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		return;
 	}
 
-	LivingUnit nearestTarget = getNearestTarget();
+	LivingUnit nearestTarget = getNearestTarget(); 
 
 	// Если видим противника ...
-	if (&nearestTarget != nullptr)
+	//if (&nearestTarget != nullptr)
+	if(nearestTarget.getId() != self.getId())
 	{
 		double distance = _self.getDistanceTo(nearestTarget);
 
@@ -213,12 +214,14 @@ LivingUnit & MyStrategy::getNearestTarget()
 	for (auto i : world.getMinions())
 		targets.push_back(&i);
 
-	LivingUnit * unit = nullptr;
-
-	double minDist = targets.front()->getDistanceTo(self);
+	LivingUnit * unit = &self;
+	if (targets.size() == 0) return *unit;
+	double minDist = 1e10;
 
 	for (auto &u : targets)
 	{
+		if (u->getFaction() == Faction::FACTION_NEUTRAL || u->getFaction() == self.getFaction())
+			continue;
 		if (u->getDistanceTo(self) < minDist)
 		{
 			minDist = u->getDistanceTo(self);
@@ -262,4 +265,6 @@ LivingUnit & MyStrategy::getCloseAndWeakTarget()
 	return *unit;
 }
 
-MyStrategy::MyStrategy() { }
+MyStrategy::MyStrategy() {
+	LOW_HP_FACTOR = 0.4;
+}
