@@ -26,7 +26,7 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	//}
 	
 	//_move.setSkillToLearn();
-	LivingUnit nearestTarget = getNearestTarget();
+	LivingUnit nearestTarget = getCloseAndWeakTarget();// getNearestTarget();
 
 	// Если видим противника ...
 	if(nearestTarget.getId() != self.getId())
@@ -263,9 +263,7 @@ LivingUnit & MyStrategy::getNearestTarget()
 
 	for (auto &u : targets)
 	{
-		if (u->getFaction() == Faction::FACTION_NEUTRAL || u->getFaction() == self.getFaction())
-			continue;
-		if (u->getDistanceTo(self) < minDist)
+		if ( !(u->getFaction() == Faction::FACTION_NEUTRAL || u->getFaction() == self.getFaction()) &&	(u->getDistanceTo(self) < minDist))
 		{
 			minDist = u->getDistanceTo(self);
 			unit = u;
@@ -285,12 +283,18 @@ LivingUnit & MyStrategy::getNearestTarget()
 LivingUnit & MyStrategy::getCloseAndWeakTarget()
 {
 	std::vector<LivingUnit *> targets;
-	for (auto i : world.getBuildings())
-		targets.push_back(&i);
-	for (auto i : world.getWizards())
-		targets.push_back(&i);
-	for (auto i : world.getMinions())
-		targets.push_back(&i);
+	for (unsigned int i = 0; i < world.getBuildings().size(); i++)
+	{
+		targets.push_back(new LivingUnit(world.getBuildings()[i]));
+	}
+	for (unsigned int i = 0; i < world.getWizards().size(); i++)
+	{
+		targets.push_back(new LivingUnit(world.getWizards()[i]));
+	}
+	for (unsigned int i = 0; i < world.getMinions().size(); i++)
+	{
+		targets.push_back(new LivingUnit(world.getMinions()[i]));
+	}
 
 	LivingUnit * unit = &self;
 	if (targets.size() == 0) return *unit;
@@ -301,7 +305,7 @@ LivingUnit & MyStrategy::getCloseAndWeakTarget()
 	});
 
 	auto it = targets.begin();
-	while (it != targets.end() && ( (*it)->getFaction() == self.getFaction() || ((*it)->getDistanceTo(self)) > self.getCastRange() ) )
+	while (it != targets.end() && ( (*it)->getFaction() == self.getFaction() || ((*it)->getDistanceTo(self)) > self.getCastRange() || (*it)->getFaction() == Faction::FACTION_NEUTRAL) )
 	{
 		it++;
 	}
