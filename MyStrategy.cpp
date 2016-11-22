@@ -10,35 +10,31 @@
 using namespace model;
 using namespace std;
 
-void MyStrategy::move(const Wizard& self, const World& world, const Game& game, Move& _move) {
-    /*move.setSpeed(game.getWizardForwardSpeed());
-    move.setStrafeSpeed(game.getWizardStrafeSpeed());
-    move.setTurn(game.getWizardMaxTurnAngle());
-    move.setAction(ACTION_MAGIC_MISSILE);
-	LivingUnit nearestEnemy = getNearestTarget();	*/
-	
-	initializeStrategy(self, game);
-	initializeTick(self, world, game, _move);
+void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _game, Move& _move) {
+  	
+	initializeStrategy(_self, _game);
+	initializeTick(_self, _world, _game, _move);
 
 	// Постоянно двигаемся из-стороны в сторону, чтобы по нам было сложнее попасть.
 	// Считаете, что сможете придумать более эффективный алгоритм уклонения? Попробуйте! ;)
-	_move.setStrafeSpeed( rand()%2 ? game.getWizardStrafeSpeed() : -game.getWizardStrafeSpeed());
+	_move.setStrafeSpeed( rand()%2 ? _game.getWizardStrafeSpeed() : -_game.getWizardStrafeSpeed());
 
 	// Если осталось мало жизненной энергии, отступаем к предыдущей ключевой точке на линии.
-	if (self.getLife() < self.getMaxLife() * LOW_HP_FACTOR) {
-		goTo(getPreviousWaypoint());
+	if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR) {
+		goTo(getPreviousWaypoint(),_move);
 		return;
 	}
 
 	LivingUnit nearestTarget = getNearestTarget();
 
 	// Если видим противника ...
-	
-		double distance = self.getDistanceTo(nearestTarget);
+	if (&nearestTarget != nullptr)
+	{
+		double distance = _self.getDistanceTo(nearestTarget);
 
 		// ... и он в пределах досягаемости наших заклинаний, ...
-		if (distance <= self.getCastRange()) {
-			double angle = self.getAngleTo(nearestTarget);
+		if (distance <= _self.getCastRange()) {
+			double angle = _self.getAngleTo(nearestTarget);
 
 			// ... то поворачиваемся к цели.
 			_move.setTurn(angle);
@@ -53,10 +49,10 @@ void MyStrategy::move(const Wizard& self, const World& world, const Game& game, 
 
 			return;
 		}
-	
-
+	}
 	// Если нет других действий, просто продвигаемся вперёд.
-	goTo(getNextWaypoint());
+	goTo(getNextWaypoint(),_move);
+	return;
 }
 
 
@@ -149,7 +145,7 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 * Сохраняем все входные данные в полях класса для упрощения доступа к ним.
 */
 void MyStrategy::initializeTick(const Wizard& _self, const World& _world, const Game& _game, const Move& _move) {
-	this->self = self;
+	this->self = _self;
 	this->world = _world;
 	this->game = _game;
 	this->my_move = _move;
@@ -196,8 +192,15 @@ Point2D MyStrategy::getPreviousWaypoint() {
 	return firstWaypoint;
 }
 
-void MyStrategy::goTo(Point2D & point)
+void MyStrategy::goTo(Point2D & point, Move& _move)
 {
+	double angle = self.getAngleTo(point.getX(), point.getY());
+
+	_move.setTurn(angle);
+
+	//if (fabs(angle) < game.getStaffSector() / 4.0) {
+		_move.setSpeed(game.getWizardForwardSpeed());
+	//}
 }
 
 LivingUnit & MyStrategy::getNearestTarget()
@@ -210,7 +213,7 @@ LivingUnit & MyStrategy::getNearestTarget()
 	for (auto i : world.getMinions())
 		targets.push_back(&i);
 
-	LivingUnit * unit = NULL;
+	LivingUnit * unit = nullptr;
 
 	double minDist = targets.front()->getDistanceTo(self);
 

@@ -33,7 +33,7 @@ protected:
 	void initializeTick(const model::Wizard& _self, const model::World& _world, const model::Game& _game, const model::Move& _move);
 	Point2D getNextWaypoint();
 	Point2D getPreviousWaypoint();
-	void goTo(Point2D & point);
+	void goTo(Point2D & point, model::Move& _move);
 	model::LivingUnit&  getNearestTarget();
 	model::LivingUnit&  getCloseAndWeakTarget();
 
