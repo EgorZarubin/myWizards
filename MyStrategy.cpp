@@ -20,11 +20,12 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	_move.setStrafeSpeed( rand()%2 ? _game.getWizardStrafeSpeed() : -_game.getWizardStrafeSpeed());
 
 	// Если осталось мало жизненной энергии, отступаем к предыдущей ключевой точке на линии.
-	if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR) {
-		goTo(getPreviousWaypoint(),_move);
+	//if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR) {
+	//	goTo(getPreviousWaypoint(),_move);
 		//return;
-	}
-
+	//}
+	
+	//_move.setSkillToLearn();
 	LivingUnit nearestTarget = getNearestTarget();
 
 	// Если видим противника ...
@@ -33,28 +34,43 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		double distance = _self.getDistanceTo(nearestTarget);
 
 		// ... и он в пределах досягаемости наших заклинаний, ...
-		if (distance <= _self.getCastRange()) {
+		if (distance <= _self.getCastRange())
+		{
 			double angle = _self.getAngleTo(nearestTarget);
 
 			// ... то поворачиваемся к цели.
 			_move.setTurn(angle);
 
 			// Если цель перед нами, ...
-			if (fabs(angle) < game.getStaffSector() / 2.0) {
-				// ... то атакуем.
-				//if (nearestTarget.getLife() / nearestTarget.getMaxLife() > 0.5)
-				//	_move.setAction(ActionType::ACTION_FROST_BOLT);
-				//else
-					_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
-				_move.setCastAngle(angle);
-				_move.setMinCastDistance(distance - nearestTarget.getRadius() + game.getMagicMissileRadius());
+			if (_self.getRemainingActionCooldownTicks() == 0)
+			{
+				if (fabs(angle) < game.getStaffSector() / 2.0)
+				{
+					if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance < nearestTarget.getRadius() + 70)
+						_move.setAction(ActionType::ACTION_STAFF);
+					else
+						_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
+					_move.setCastAngle(angle);
+					_move.setMinCastDistance(distance - nearestTarget.getRadius() + game.getMagicMissileRadius());
+				}
 			}
-
+			else if (_self.getRemainingActionCooldownTicks() < 20)
+				return;
+			else
+			{
+				goBackward(getPreviousWaypoint(), _move);
+			}
+			
 			return;
-		}
+		}		
 	}
 	// Если нет других действий, просто продвигаемся вперёд.
-	goTo(getNextWaypoint(),_move);
+	if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR)
+	{
+		goBackward(getPreviousWaypoint(), _move);
+	}
+	else
+		goTo(getNextWaypoint(), _move);
 	return;
 }
 
