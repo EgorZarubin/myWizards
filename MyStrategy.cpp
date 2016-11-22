@@ -95,10 +95,10 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 		double mapSize = _game.getMapSize();
 		
 		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_MIDDLE, vector<Point2D>{
-			Point2D(100.0, mapSize - 100.0),
-			Point2D(200.0, mapSize - 600.0),
-			Point2D(800.0, mapSize - 800.0),
-			Point2D(mapSize - 600.0, 600.0)
+			Point2D(100.0, mapSize - 600),
+			Point2D(600.0, mapSize - 500),
+			Point2D(1110.0, mapSize - 1000),
+			Point2D(mapSize - 700.0, 700.0)
 		}));
 
 		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_TOP, vector<Point2D>{
@@ -113,8 +113,8 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 		}));
 
 		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_BOTTOM, vector<Point2D>{
-			 Point2D(100.0, mapSize - 100.0),
-			 Point2D(400.0, mapSize - 100.0),
+			 Point2D(110.0, mapSize - 500.0),
+			 Point2D(600.0, mapSize - 500.0),
 			 Point2D(800.0, mapSize - 200.0),
 			 Point2D(mapSize * 0.25, mapSize - 200.0),
 			 Point2D(mapSize * 0.5, mapSize - 200.0),
@@ -132,12 +132,12 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 		case 2:
 		case 6:
 		case 7:
-			lane = LaneType::LANE_TOP;
-			break;
+			//lane = LaneType::LANE_TOP;
+			//break;
 		case 3:
 		case 8:
-			lane = LaneType::LANE_MIDDLE;
-			break;
+			//lane = LaneType::LANE_MIDDLE;
+			//break;
 		case 4:
 		case 5:
 		case 9:
@@ -212,7 +212,7 @@ Point2D MyStrategy::getPreviousWaypoint() {
 	return firstWaypoint;
 }
 
-void MyStrategy::goTo(Point2D & point, Move& _move)
+void MyStrategy::goTo(const Point2D & point, Move& _move)
 {
 	double angle = self.getAngleTo(point.getX(), point.getY());
 
@@ -223,7 +223,7 @@ void MyStrategy::goTo(Point2D & point, Move& _move)
 	//}
 }
 
-void MyStrategy::goBackward(Point2D & point, Move& _move)
+void MyStrategy::goBackward(const Point2D & point, Move& _move)
 {
 	double angle = self.getAngleTo(point.getX(), point.getY());
 

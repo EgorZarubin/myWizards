@@ -5,9 +5,49 @@
 
 #include <list>
 #include <map>
+#include <math.h>
 
 #include "Strategy.h"
-#include "Point2D.h"
+
+
+/**
+* Вспомогательный класс для хранения позиций на карте.
+*/
+class Point2D {
+	double x;
+	double y;
+
+public:
+	Point2D() {
+		this->x = 0;
+		this->y = 0;
+	}
+
+	Point2D(double _x, double _y) {
+		this->x = _x;
+		this->y = _y;
+	}
+
+	double getX() const {
+		return x;
+	}
+
+	double getY() const {
+		return y;
+	}
+
+	double getDistanceTo(double x, double y) const {
+		return sqrt((this->x - x)*(this->x - x) + (this->y - y)*(this->y - y));
+	}
+
+	double getDistanceTo(Point2D point) {
+		return getDistanceTo(point.x, point.y);
+	}
+
+	double getDistanceTo(model::Unit  unit) {
+		return getDistanceTo(unit.getX(), unit.getY());
+	}
+};
 
 
 class MyStrategy : public Strategy {
@@ -33,8 +73,8 @@ protected:
 	void initializeTick(const model::Wizard& _self, const model::World& _world, const model::Game& _game, const model::Move& _move);
 	Point2D getNextWaypoint();
 	Point2D getPreviousWaypoint();
-	void goTo(Point2D & point, model::Move& _move);
-	void goBackward(Point2D & point, model::Move& _move);
+	void goTo(const Point2D & point, model::Move& _move);
+	void goBackward(const Point2D & point, model::Move& _move);
 	model::LivingUnit&  getNearestTarget();
 	model::LivingUnit&  getCloseAndWeakTarget();
 
