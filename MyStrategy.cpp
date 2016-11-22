@@ -36,6 +36,7 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		// ... и он в пределах досягаемости наших заклинаний, ...
 		if (distance <= _self.getCastRange())
 		{
+			_move.setSpeed(0);
 			double angle = _self.getAngleTo(nearestTarget);
 
 			// ... то поворачиваемся к цели.
@@ -49,25 +50,26 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 					if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance < nearestTarget.getRadius() + 70)
 						_move.setAction(ActionType::ACTION_STAFF);
 					else
+					{
 						_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
-					_move.setCastAngle(angle);
-					_move.setMinCastDistance(distance - nearestTarget.getRadius() + game.getMagicMissileRadius());
+						_move.setCastAngle(angle);
+						_move.setMinCastDistance(distance - nearestTarget.getRadius() + game.getMagicMissileRadius());
+					}
 				}
 			}
 			else if (_self.getRemainingActionCooldownTicks() < 20)
 				return;
 			else
 			{
-				goBackward(getPreviousWaypoint(), _move);
-			}
-			
+				//goBackward(getPreviousWaypoint(), _move);
+			}			
 			return;
 		}		
 	}
 	// Если нет других действий, просто продвигаемся вперёд.
 	if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR)
 	{
-		goBackward(getPreviousWaypoint(), _move);
+		//goBackward(getPreviousWaypoint(), _move);
 	}
 	else
 		goTo(getNextWaypoint(), _move);
@@ -90,21 +92,16 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 		
 		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_MIDDLE, vector<Point2D>{
 			Point2D(100.0, mapSize - 100.0),
-			rand()%2
-			?  Point2D(600.0, mapSize - 200.0)
-			:  Point2D(200.0, mapSize - 600.0),
-			 Point2D(800.0, mapSize - 800.0),
-			 Point2D(mapSize - 600.0, 600.0)
+			Point2D(200.0, mapSize - 600.0),
+			Point2D(800.0, mapSize - 800.0),
+			Point2D(mapSize - 600.0, 600.0)
 		}));
 
 		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_TOP, vector<Point2D>{
-			 Point2D(100.0, mapSize - 100.0),
-			 Point2D(100.0, mapSize - 400.0),
-			 Point2D(200.0, mapSize - 800.0),
+			 Point2D(100.0, mapSize * 0.9),
 			 Point2D(200.0, mapSize * 0.75),
 			 Point2D(200.0, mapSize * 0.5),
-			 Point2D(200.0, mapSize * 0.25),
-			 Point2D(200.0, 200.0),
+			 Point2D(200.0, mapSize * 0.25),			
 			 Point2D(mapSize * 0.25, 200.0),
 			 Point2D(mapSize * 0.5, 200.0),
 			 Point2D(mapSize * 0.75, 200.0),
