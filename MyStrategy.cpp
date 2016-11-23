@@ -11,7 +11,7 @@ using namespace model;
 using namespace std;
 
 
-// todo разделить цели по приоритетам : тип юнита, здоровье
+// todo сходить за бонусом
 // сделать  хорошие опорные точки (возможно подходить к ним ближе)
 // улучшить движение задним ходом
 
@@ -115,8 +115,8 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	//}
 	
 	// Если осталось мало жизненной энергии, отступаем задом к предыдущей ключевой точке на линии.
-	if( d_f <= self.getRadius() + closestFriend->getRadius() + 5 )
-		goBackwardFrom(Point2D(closestFriend->getX(), closestFriend->getY()), _move);
+	if( d_f <= self.getRadius() + closestFriend->getRadius() + 1 )
+		goTangentialFrom(Point2D(closestFriend->getX(), closestFriend->getY()), _move);
 	else if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR)	
 		goBackwardTo(getPreviousWaypoint(), _move);	
 	else if (d_e < 600)                                            // враг близко - идем к нему
@@ -156,8 +156,8 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 			 Point2D(100.0, mapSize * 0.9),
 			 Point2D(200.0, mapSize * 0.75),
 			 Point2D(200.0, mapSize * 0.5),
-			 Point2D(200.0, mapSize * 0.25),			
-			 Point2D(mapSize * 0.25, 200.0),
+			 Point2D(200.0, mapSize * 0.2),			
+			 Point2D(mapSize * 0.2, 200.0),
 			 Point2D(mapSize * 0.5, 200.0),
 			 Point2D(mapSize * 0.75, 200.0),
 			 Point2D(mapSize - 700.0, 700.0)
@@ -305,7 +305,19 @@ void MyStrategy::goBackwardTo(const Point2D & point, Move& _move)
 void MyStrategy::goBackwardFrom (const Point2D & point, Move& _move)
 {
 	double angle = self.getAngleTo(point.getX(), point.getY());
+	_move.setTurn(angle);
+	if (fabs(angle) < game.getWizardMaxTurnAngle()) {
+		_move.setSpeed(-game.getWizardForwardSpeed());
+	}
+}
 
+void MyStrategy::goTangentialFrom(const Point2D & point, Move& _move)
+{
+	double angle1 = self.getAngleTo(self.getX() - (point.getY() - self.getY()), self.getY() + (point.getX() - self.getX()));
+	double angle2 = self.getAngleTo(self.getX() + (point.getY() - self.getY()), self.getY() - (point.getX() - self.getX()));
+
+	_move.setStrafeSpeed(0);
+	double angle = std::min(angle1, angle2);
 	_move.setTurn(angle);
 	if (fabs(angle) < game.getWizardMaxTurnAngle()) {
 		_move.setSpeed(-game.getWizardForwardSpeed());
@@ -607,5 +619,5 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 
 MyStrategy::MyStrategy() {
 	LOW_HP_FACTOR = 0.25;
-	WAYPOINT_RADIUS = 50.0;
+	WAYPOINT_RADIUS = 100.0;
 }
