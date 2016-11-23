@@ -115,7 +115,7 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	//}
 	
 	// Если осталось мало жизненной энергии, отступаем задом к предыдущей ключевой точке на линии.
-	if( d_f <= 70)
+	if( d_f <= self.getRadius() + closestFriend->getRadius() + 5 )
 		goBackwardFrom(Point2D(closestFriend->getX(), closestFriend->getY()), _move);
 	else if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR)	
 		goBackwardTo(getPreviousWaypoint(), _move);	
@@ -144,9 +144,12 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 		
 		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_MIDDLE, vector<Point2D>{
 			Point2D(100.0, mapSize - 600),
-			Point2D(600.0, mapSize - 500),
-			Point2D(1110.0, mapSize - 1000),
-			Point2D(mapSize - 700.0, 700.0)
+				Point2D(800.0, mapSize - 800),
+				Point2D(900.0, mapSize - 1000),
+				Point2D(1800.0, mapSize - 1600),
+				Point2D(2000, 1900.0),
+				Point2D(2400, 1200.0),
+				Point2D(mapSize - 700.0, 700.0)
 		}));
 
 		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_TOP, vector<Point2D>{
@@ -157,7 +160,7 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 			 Point2D(mapSize * 0.25, 200.0),
 			 Point2D(mapSize * 0.5, 200.0),
 			 Point2D(mapSize * 0.75, 200.0),
-			 Point2D(mapSize - 200.0, 200.0)
+			 Point2D(mapSize - 700.0, 700.0)
 		}));
 
 		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_BOTTOM, vector<Point2D>{
@@ -179,8 +182,8 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 		case 2:
 		case 6:
 		case 7:
-			//lane = LaneType::LANE_TOP;
-			//break;
+			lane = LaneType::LANE_TOP;
+			break;
 		case 3:
 		case 8:
 			lane = LaneType::LANE_MIDDLE;
@@ -193,7 +196,26 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 			break;
 		default: break;
 		}
-
+		/*switch (static_cast<int>(_self.getId()))
+		{
+		case 1:
+		case 2:
+		case 6:
+		case 7:
+			lane = LaneType::LANE_TOP;
+			break;
+		case 3:
+		case 8:
+			lane = LaneType::LANE_MIDDLE;
+			break;
+		case 4:
+		case 5:
+		case 9:
+		case 10:
+			lane = LaneType::LANE_BOTTOM;
+			break;
+		default: break;
+		}*/
 		waypoints = waypointsByLane[lane];
 
 		// Наша стратегия исходит из предположения, что заданные нами ключевые точки упорядочены по убыванию
@@ -585,5 +607,5 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 
 MyStrategy::MyStrategy() {
 	LOW_HP_FACTOR = 0.25;
-	WAYPOINT_RADIUS = 100.0;
+	WAYPOINT_RADIUS = 50.0;
 }
