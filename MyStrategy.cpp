@@ -25,7 +25,7 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	_move.setStrafeSpeed( rand()%2 ? _game.getWizardStrafeSpeed() : -_game.getWizardStrafeSpeed());
 
 	
-	
+	if (getBonus(_move)) return;
 	
 	getTargets();
 	double d_f, d_e, d_w, d_b, d_m, d_wt;
@@ -108,14 +108,15 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 		}));
 
 		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_TOP, vector<Point2D>{
-			 Point2D(100.0, mapSize * 0.9),
-			 Point2D(200.0, mapSize * 0.75),
-			 Point2D(200.0, mapSize * 0.5),
-			 Point2D(200.0, mapSize * 0.2),			
-			 Point2D(mapSize * 0.2, 200.0),
-			 Point2D(mapSize * 0.5, 200.0),
-			 Point2D(mapSize * 0.75, 200.0),
-			 Point2D(mapSize - 700.0, 700.0)
+				Point2D(100.0, mapSize * 0.9),
+				Point2D(200.0, mapSize * 0.75),
+				Point2D(200.0, mapSize * 0.5),
+				Point2D(200.0, mapSize * 0.2),
+				Point2D(600.0, 600.0),
+				Point2D(mapSize * 0.2, 200.0),
+				Point2D(mapSize * 0.5, 200.0),
+				Point2D(mapSize * 0.75, 200.0),
+				Point2D(mapSize - 700.0, 700.0)
 		}));
 
 		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_BOTTOM, vector<Point2D>{
@@ -124,7 +125,7 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 			 Point2D(mapSize * 0.25, mapSize - 200.0),
 			 Point2D(mapSize * 0.5, mapSize - 200.0),
 			 Point2D(mapSize * 0.75, mapSize - 200.0),
-			 Point2D(mapSize - 200.0, mapSize - 200.0),
+			 Point2D(mapSize - 600.0, mapSize - 600.0),
 			 Point2D(mapSize - 200.0, mapSize * 0.75),
 			 Point2D(mapSize - 200.0, mapSize * 0.5),
 			 Point2D(mapSize - 200.0, mapSize * 0.25),
@@ -242,19 +243,19 @@ void MyStrategy::goTo(const Point2D & point, Move& _move)
 
 	_move.setTurn(angle);
 
-	//if (fabs(angle) < game.getStaffSector() / 4.0) {
+	if (fabs(angle) < game.getWizardMaxTurnAngle())
 		_move.setSpeed(game.getWizardForwardSpeed());
-	//}
+
 }
 
 void MyStrategy::goBackwardTo(const Point2D & point, Move& _move)
 {
-	double angle = self.getAngleTo(2*self.getX()-point.getX(), 2 * self.getY() - point.getY());
+	double angle = self.getAngleTo(2 * self.getX() - point.getX(), 2 * self.getY() - point.getY());
 
 	_move.setTurn(angle);
-	if (fabs(angle) < game.getWizardMaxTurnAngle()) {
+	if (fabs(angle) < game.getWizardMaxTurnAngle())
 		_move.setSpeed(-game.getWizardForwardSpeed());
-	}
+
 }
 
 void MyStrategy::goBackwardFrom (const Point2D & point, Move& _move)
@@ -278,6 +279,28 @@ void MyStrategy::goTangentialFrom(const Point2D & point, Move& _move)
 		_move.setSpeed(game.getWizardForwardSpeed());
 	}
 }
+
+bool MyStrategy::getBonus(model::Move & _move)
+{
+	double mapSize = game.getMapSize();
+	double d1 = self.getDistanceTo(mapSize*0.3, mapSize*0.3);
+	double d2 = self.getDistanceTo(mapSize*0.7, mapSize*0.7);
+	vector<Bonus> bonuses = world.getBonuses();
+	if (bonuses.size() != 0 || (world.getTickCount() / game.getBonusAppearanceIntervalTicks()) < 300)
+	{
+		if (fabs(self.getX() - self.getY()) < 400 && (d1 < 800 || d2 < 800))
+		if (d1 < d2)
+			goTo(Point2D(mapSize*0.3, mapSize*0.3), _move);
+		else
+			goTo(Point2D(mapSize*0.7, mapSize*0.7), _move);
+	}
+	
+	
+	double ticksToBonus = game.getBonusAppearanceIntervalTicks();
+	return false;
+}
+
+
 
 LivingUnit & MyStrategy::getNearestTarget()
 {		

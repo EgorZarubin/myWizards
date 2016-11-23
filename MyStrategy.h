@@ -88,6 +88,7 @@ protected:
 	void goBackwardTo(const Point2D & point, model::Move& _move);
 	void goBackwardFrom(const Point2D & point, model::Move& _move);
 	void goTangentialFrom(const Point2D & point, model::Move& _move);
+	bool getBonus(model::Move& _move);
 	model::LivingUnit&  getNearestTarget();
 	model::LivingUnit&  getNearestBuilding();
 	model::LivingUnit&  getNearestWizard();
