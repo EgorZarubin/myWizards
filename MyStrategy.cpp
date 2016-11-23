@@ -68,52 +68,7 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		attackEnemy(_self, _world, _game, _move, enemy);
 		return;
 	}
-
-	//// Если видим противника ...
-	//if (nearestTarget.getId() != self.getId())
-	//{
-	//	double distance = _self.getDistanceTo(nearestTarget);
-	//	if (d_wt != distance)
-	//	{
-	//		int i = 0;
-	//	}
-	//	// ... и он в пределах досягаемости наших заклинаний, ...
-	//	if (distance <= _self.getCastRange())
-	//	{
-	//		//return;
-	//		_move.setSpeed(0);
-	//		double angle = _self.getAngleTo(nearestTarget);
-	//		// ... то поворачиваемся к цели.
-	//		_move.setTurn(angle);
-	//		// Если цель перед нами, ...
-	//		if (_self.getRemainingActionCooldownTicks() == 0)
-	//		{
-	//			if (fabs(angle) < game.getStaffSector() / 2.0)
-	//			{
-	//				if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance < 70)
-	//					_move.setAction(ActionType::ACTION_STAFF);
-	//				else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE > 10])
-	//					_move.setAction(ActionType::ACTION_FIREBALL);
-	//				else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
-	//				{
-	//					_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
-	//					_move.setCastAngle(angle);
-	//					_move.setMinCastDistance(distance - nearestTarget.getRadius() + game.getMagicMissileRadius());
-	//				}
-	//			}
-	//		}
-	//		else if (_self.getRemainingActionCooldownTicks() < 20)
-	//			return;
-	//		else if (distance < 400)
-	//		{
-	//			goBackwardTo(getPreviousWaypoint(), _move);
-	//		}
-	//		if (d_e < 100)
-	//			goBackwardFrom(Point2D(closestEnemy->getX(), closestEnemy->getY()), _move);
-	//		return;
-	//	}
-	//}
-	
+			
 	// Если осталось мало жизненной энергии, отступаем задом к предыдущей ключевой точке на линии.
 	if( d_f <= self.getRadius() + closestFriend->getRadius() + 1 )
 		goTangentialFrom(Point2D(closestFriend->getX(), closestFriend->getY()), _move);
@@ -320,7 +275,7 @@ void MyStrategy::goTangentialFrom(const Point2D & point, Move& _move)
 	double angle = std::min(angle1, angle2);
 	_move.setTurn(angle);
 	if (fabs(angle) < game.getWizardMaxTurnAngle()) {
-		_move.setSpeed(-game.getWizardForwardSpeed());
+		_move.setSpeed(game.getWizardForwardSpeed());
 	}
 }
 
