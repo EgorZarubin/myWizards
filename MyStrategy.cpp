@@ -40,78 +40,83 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	LivingUnit nearestTarget = getCloseAndWeakTarget();// getNearestTarget();
 
 
-	// приоритет атаки
-	if (d_e < _self.getCastRange()) //если хоть кто то в пределах дос€гаемости
-	{		
-		_move.setSpeed(0);
-		LivingUnit enemy = *closestEnemy;
-		if (d_wt < _self.getCastRange())
-		{
-			enemy = *weakestEnemy;//
-		}
-		else
-		if (d_e < 70 || closestEnemy->getLife() <  24)
-		{
-			//enemy = *closestEnemy;
-		}
-		else if(d_b < _self.getCastRange())
-		{
-			enemy = *closestBuilding;//
-		}
-		else if (d_w < _self.getCastRange())
-		{
-			enemy = *closestWizard;//
-		}
-		else if (d_m < _self.getCastRange())
-		{
-			enemy = *closestMinion;//
-		}
-		attackEnemy(_self, _world, _game, _move, enemy);
-		return;
-	}
-
-	//// ≈сли видим противника ...
-	//if (nearestTarget.getId() != self.getId())
-	//{
-	//	double distance = _self.getDistanceTo(nearestTarget);
-
-	//	// ... и он в пределах дос€гаемости наших заклинаний, ...
-	//	if (distance <= _self.getCastRange())
+	//// приоритет атаки
+	//if (d_e < _self.getCastRange()) //если хоть кто то в пределах дос€гаемости
+	//{		
+	//	_move.setSpeed(0);
+	//	LivingUnit enemy = *closestEnemy;
+	//	if (d_wt < _self.getCastRange())
 	//	{
-	//		//return;
-	//		_move.setSpeed(0);
-
-	//		double angle = _self.getAngleTo(nearestTarget);
-
-	//		// ... то поворачиваемс€ к цели.
-	//		_move.setTurn(angle);
-
-	//		// ≈сли цель перед нами, ...
-	//		if (_self.getRemainingActionCooldownTicks() == 0)
-	//		{
-	//			if (fabs(angle) < game.getStaffSector() / 2.0)
-	//			{
-	//				if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance < _self.getRadius() + nearestTarget.getRadius() + 70)
-	//					_move.setAction(ActionType::ACTION_STAFF);
-	//				else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE > 10])
-	//					_move.setAction(ActionType::ACTION_FIREBALL);
-	//				else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
-	//				{
-	//					_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
-	//					_move.setCastAngle(angle);
-	//					_move.setMinCastDistance(distance - nearestTarget.getRadius() + game.getMagicMissileRadius());
-	//				}
-	//			}
-	//		}
-	//		else if (_self.getRemainingActionCooldownTicks() < 20)
-	//			return;
-	//		else if (distance < 400)
-	//		{
-	//			goBackward(getPreviousWaypoint(), _move);
-	//		}
-	//		return;
+	//		enemy = *weakestEnemy;//
 	//	}
+	//	else
+	//	if (d_e < 70 || closestEnemy->getLife() <  24)
+	//	{
+	//		//enemy = *closestEnemy;
+	//	}
+	//	else if(d_b < _self.getCastRange())
+	//	{
+	//		enemy = *closestBuilding;//
+	//	}
+	//	else if (d_w < _self.getCastRange())
+	//	{
+	//		enemy = *closestWizard;//
+	//	}
+	//	else if (d_m < _self.getCastRange())
+	//	{
+	//		enemy = *closestMinion;//
+	//	}
+	//	attackEnemy(_self, _world, _game, _move, enemy);
+	//	return;
 	//}
+
+	// ≈сли видим противника ...
+	if (nearestTarget.getId() != self.getId())
+	{
+
+		double distance = _self.getDistanceTo(nearestTarget);
+
+		if (d_wt != distance)
+		{
+			int i = 0;
+		}
+		// ... и он в пределах дос€гаемости наших заклинаний, ...
+		if (distance <= _self.getCastRange())
+		{
+			//return;
+			_move.setSpeed(0);
+
+			double angle = _self.getAngleTo(nearestTarget);
+
+			// ... то поворачиваемс€ к цели.
+			_move.setTurn(angle);
+
+			// ≈сли цель перед нами, ...
+			if (_self.getRemainingActionCooldownTicks() == 0)
+			{
+				if (fabs(angle) < game.getStaffSector() / 2.0)
+				{
+					if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance < 70)
+						_move.setAction(ActionType::ACTION_STAFF);
+					else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE > 10])
+						_move.setAction(ActionType::ACTION_FIREBALL);
+					else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
+					{
+						_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
+						_move.setCastAngle(angle);
+						_move.setMinCastDistance(distance - nearestTarget.getRadius() + game.getMagicMissileRadius());
+					}
+				}
+			}
+			else if (_self.getRemainingActionCooldownTicks() < 20)
+				return;
+			else if (distance < 400)
+			{
+				goBackward(getPreviousWaypoint(), _move);
+			}
+			return;
+		}
+	}
 	
 	// ≈сли осталось мало жизненной энергии, отступаем задом к предыдущей ключевой точке на линии.
 	if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR)
@@ -120,6 +125,8 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	}
 	else if (d_e < 600)// ≈сли нет других действий, просто продвигаемс€ вперЄд.
 		goTo(Point2D(closestEnemy->getX(), closestEnemy->getY()), _move);
+	else if (d_f > 400 && d_f< 6000 && closestFriend->getRadius() < 100)// бежим к друзь€м, если они далеко b и это не база // надо бы избегать деревьев
+		goTo(Point2D(closestFriend->getX(), closestFriend->getY()), _move);
 	else
 		goTo(getNextWaypoint(), _move);
 	return;
@@ -550,9 +557,7 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 		//goBackward(getPreviousWaypoint(), _move);
 		_move.setSpeed(-game.getWizardForwardSpeed());
 	}
-
-		
-
+			
 	if (_self.getRemainingActionCooldownTicks() == 0)
 	{
 		// ≈сли цель перед нами, ...
