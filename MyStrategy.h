@@ -85,7 +85,8 @@ protected:
 	Point2D getNextWaypoint();
 	Point2D getPreviousWaypoint();
 	void goTo(const Point2D & point, model::Move& _move);
-	void goBackward(const Point2D & point, model::Move& _move);
+	void goBackwardTo(const Point2D & point, model::Move& _move);
+	void goBackwardFrom(const Point2D & point, model::Move& _move);
 	model::LivingUnit&  getNearestTarget();
 	model::LivingUnit&  getNearestBuilding();
 	model::LivingUnit&  getNearestWizard();
