@@ -69,6 +69,17 @@ protected:
 	model::Game game;
 	model::Move my_move;
 
+	///////////////////////////
+	model::LivingUnit * closestFriend;
+	
+	//enemies
+	model::LivingUnit * closestEnemy;	
+	model::LivingUnit * closestWizard;
+	model::LivingUnit * closestBuilding;
+	model::LivingUnit * closestMinion;
+	model::LivingUnit * weakestEnemy;
+
+
 	void initializeStrategy(const model::Wizard& _self, const model::Game& _game);
 	void initializeTick(const model::Wizard& _self, const model::World& _world, const model::Game& _game, const model::Move& _move);
 	Point2D getNextWaypoint();
@@ -76,7 +87,14 @@ protected:
 	void goTo(const Point2D & point, model::Move& _move);
 	void goBackward(const Point2D & point, model::Move& _move);
 	model::LivingUnit&  getNearestTarget();
+	model::LivingUnit&  getNearestBuilding();
+	model::LivingUnit&  getNearestWizard();
+	model::LivingUnit&  getNearestMinion();
+	model::LivingUnit&  getNearestFriend();
 	model::LivingUnit&  getCloseAndWeakTarget();
+	void getTargets();
+
+	void attackEnemy(const model::Wizard& _self, const model::World& _world, const model::Game& _game, model::Move& _move, const model::LivingUnit& enemy);
 
 public:
     MyStrategy();
