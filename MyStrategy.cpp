@@ -452,7 +452,7 @@ LivingUnit & MyStrategy::getCloseAndWeakTarget()
 
 	std::sort(targets.begin(), targets.end(),
 		[](LivingUnit* u1, LivingUnit* u2) {
-		return (u1->getLife() < u2->getLife());
+		return (u1->getLife()/u1->getMaxLife() < u2->getLife()/u1->getMaxLife());
 	});
 
 	auto it = targets.begin();
@@ -498,7 +498,7 @@ void MyStrategy::getTargets()
 	// упорядочиваем цели по здоровью
 	std::sort(targets.begin(), targets.end(),
 		[](LivingUnit* u1, LivingUnit* u2) {
-		return (u1->getLife() < u2->getLife());
+		return (u1->getLife() / u1->getMaxLife() < u2->getLife() / u1->getMaxLife());
 	});
 
 	auto it = targets.begin();
