@@ -538,7 +538,7 @@ void MyStrategy::getTargets()
 		{
 			if (u->getDistanceTo(self) < minDist_f)
 			{
-				minDist = u->getDistanceTo(self);
+				minDist_f = u->getDistanceTo(self);
 				closestFriend = u;
 			}
 		}
