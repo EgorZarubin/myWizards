@@ -26,20 +26,7 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	// Считаете, что сможете придумать более эффективный алгоритм уклонения? Попробуйте! ;)
 	_move.setStrafeSpeed( rand()%2 ? _game.getWizardStrafeSpeed() : -_game.getWizardStrafeSpeed());
 	
-	if (getBonus(_move)) return;
-	int closeToBonus = getCloseToBonus(_move);
-	switch (closeToBonus)
-	{
-	case 0: break;
-	case 1: goBackwardTo(Point2D(800, 800), _move); return;
-	case 11:goBackwardTo(Point2D(750, 300), _move); return;	
-	case 2:goBackwardTo(Point2D(1600, 1600), _move); return;
-	case 21:goBackwardTo(Point2D(2000, 2000), _move); return;
-	case 3:goBackwardTo(Point2D(3200, 3200), _move); return;
-	case 31:goBackwardTo(Point2D(3700, 750), _move); return;
-	default: break;
-	}
-	
+	if (getBonus(_move)) return;	
 	
 	getTargets();
 	double d_f, d_e, d_w, d_b, d_m, d_wt;
@@ -50,6 +37,38 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	if (closestWizard != nullptr) d_w = _self.getDistanceTo(*closestWizard);
 	if (closestMinion != nullptr) d_m = _self.getDistanceTo(*closestMinion);
 	if (weakestEnemy != nullptr) d_wt = _self.getDistanceTo(*weakestEnemy);
+
+	int closeToBonus = getCloseToBonus(_move);
+	switch (closeToBonus)
+	{
+		if(d_wt < _self.getCastRange())
+	case 0: break;
+	case 1:
+		if (d_wt < _self.getCastRange())
+			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+		goBackwardTo(Point2D(800, 800), _move); return;
+	case 11:
+		if (d_wt < _self.getCastRange())
+			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+		goBackwardTo(Point2D(750, 300), _move); return;
+	case 2:
+		if (d_wt < _self.getCastRange())
+			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+		goBackwardTo(Point2D(1600, 1600), _move); return;
+	case 21:
+		if (d_wt < _self.getCastRange())
+			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+		goBackwardTo(Point2D(2000, 2000), _move); return;
+	case 3:
+		if (d_wt < _self.getCastRange())
+			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+		goBackwardTo(Point2D(3200, 3200), _move); return;
+	case 31:
+		if (d_wt < _self.getCastRange())
+			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+		goBackwardTo(Point2D(3700, 750), _move); return;
+	default: break;
+	}
 
 	LivingUnit nearestTarget = getCloseAndWeakTarget();// getNearestTarget();
 
@@ -162,12 +181,12 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 		case 2:
 		case 6:
 		case 7:
-			lane = LaneType::LANE_TOP;
-			break;
+			//lane = LaneType::LANE_TOP;
+		//	break;
 		case 3:
 		case 8:
-			lane = LaneType::LANE_MIDDLE;
-			break;
+		//	lane = LaneType::LANE_MIDDLE;
+		//	break;
 		case 4:
 		case 5:
 		case 9:
@@ -301,14 +320,15 @@ int MyStrategy::getCloseToBonus(model::Move & _move)
 	
 	
 	// разделяем зоны на близость к бонусам
-	if (x < 800 && y < 800) return 1;
+	if (x < 820 && y < 820 ) return 1;
 	if (x < 1600 && y < 200) return 11;
-	if (abs(x - y) < 300) return 2;
-	if (x > 2000 && x < 3000 && fabs(mapSize - x + y < 300)) return 21;
-	if ((x > mapSize - 800 && y < 800)) return 3;
+	if ((x > mapSize - 820 && y > mapSize - 820)) return 3;
 	if ((x > mapSize - 200 && y > mapSize - 1600)) 31;
+	if (abs(x - y) < 300 && x < 2400) return 2;
+	if (x > 2000 && x < 3000 && fabs(mapSize - x + y < 300)) return 21;
+	
     //	держимся ближе к бонусу	 
-	return false;
+	return 0;
 }
 
 bool MyStrategy::getBonus(model::Move & _move)
@@ -345,7 +365,7 @@ bool MyStrategy::getBonus(model::Move & _move)
 			}
 		
 	}
-	else if (d1 < 600 || d2 < 600)
+	else if ( (d1 < 600 || d2 < 600 ) && i > 500)
 	{
 		bonusChecked = true;
 		bonusCheckTicks = 0;
