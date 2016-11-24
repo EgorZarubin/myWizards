@@ -47,7 +47,7 @@ public:
 	double getDistanceTo(model::Unit  unit) {
 		return getDistanceTo(unit.getX(), unit.getY());
 	}
-	Point2D operator+ (Point2D& p)
+	Point2D operator+ (const Point2D& p) const
 	{
 		return Point2D(x + p.x, y + p.y);
 	}
