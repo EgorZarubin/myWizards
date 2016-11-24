@@ -343,6 +343,9 @@ bool MyStrategy::getBonus(model::Move & _move)
 	if (bonuses.size() != 0)
 	{
 		returnToLastPos = true;
+	
+		double distance = 6000;
+		if(closestWizard != nullptr) distance = self.getDistanceTo(*closestWizard);
 		if (fabs(self.getX() - self.getY()) < 400 && (d1 < 800 || d2 < 800))
 			if (d1 < d2)
 			{
@@ -350,8 +353,23 @@ bool MyStrategy::getBonus(model::Move & _move)
 
 					if (fabs(self.getDistanceTo(i) < d1) < 50)
 					{
-						goTo(Point2D(mapSize*0.3, mapSize*0.3), _move);						
-						return true;
+						goTo(Point2D(mapSize*0.3, mapSize*0.3), _move);
+						//атакуем, если видим вражеского волшебника
+						if (distance < self.getCastRange() && fabs(self.getAngleTo(*closestWizard)) < game.getStaffSector() / 2.0)
+						{
+							double distance = self.getDistanceTo(*closestWizard);
+							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance <= 70)
+								_move.setAction(ActionType::ACTION_STAFF);
+							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE > 10])
+								_move.setAction(ActionType::ACTION_FIREBALL);
+							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
+							{
+								_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
+								_move.setCastAngle(self.getAngleTo(*closestWizard));
+								_move.setMinCastDistance(distance - (*closestWizard).getRadius() + game.getMagicMissileRadius());
+							}
+						}
+							return true;
 					}
 			}
 			else
@@ -359,7 +377,22 @@ bool MyStrategy::getBonus(model::Move & _move)
 				for (auto & i : bonuses)
 					if (fabs(self.getDistanceTo(i) < d2) < 50)
 					{
-						goTo(Point2D(mapSize*0.7, mapSize*0.7), _move);						
+						goTo(Point2D(mapSize*0.7, mapSize*0.7), _move);	
+						//атакуем, если видим вражеского волшебника
+						if (distance < self.getCastRange() && fabs(self.getAngleTo(*closestWizard)) < game.getStaffSector() / 2.0)
+						{
+							double distance = self.getDistanceTo(*closestWizard);
+							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance <= 70)
+								_move.setAction(ActionType::ACTION_STAFF);
+							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE > 10])
+								_move.setAction(ActionType::ACTION_FIREBALL);
+							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
+							{
+								_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
+								_move.setCastAngle(self.getAngleTo(*closestWizard));
+								_move.setMinCastDistance(distance - (*closestWizard).getRadius() + game.getMagicMissileRadius());
+							}
+						}
 						return true;
 					}
 			}
