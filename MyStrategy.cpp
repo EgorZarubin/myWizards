@@ -17,15 +17,29 @@ using namespace std;
 
 void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _game, Move& _move) {
   	
+	myLastPos = Point2D(self.getX(), self.getY());
+	if (self.getDistanceTo(posBeforeBonus.getX(), posBeforeBonus.getY()) < 50) returnToLastPos = false;
 	initializeStrategy(_self, _game);
 	initializeTick(_self, _world, _game, _move);
 
 	// ѕосто€нно двигаемс€ из-стороны в сторону, чтобы по нам было сложнее попасть.
 	// —читаете, что сможете придумать более эффективный алгоритм уклонени€? ѕопробуйте! ;)
 	_move.setStrafeSpeed( rand()%2 ? _game.getWizardStrafeSpeed() : -_game.getWizardStrafeSpeed());
-
 	
 	if (getBonus(_move)) return;
+	int closeToBonus = getCloseToBonus(_move);
+	switch (closeToBonus)
+	{
+	case 0: break;
+	case 1: goBackwardTo(Point2D(800, 800), _move); return;
+	case 11:goBackwardTo(Point2D(750, 300), _move); return;	
+	case 2:goBackwardTo(Point2D(1600, 1600), _move); return;
+	case 21:goBackwardTo(Point2D(2000, 2000), _move); return;
+	case 3:goBackwardTo(Point2D(3200, 3200), _move); return;
+	case 31:goBackwardTo(Point2D(3700, 750), _move); return;
+	default: break;
+	}
+	
 	
 	getTargets();
 	double d_f, d_e, d_w, d_b, d_m, d_wt;
@@ -65,21 +79,30 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		{
 			enemy = *closestMinion;//
 		}
-		attackEnemy(_self, _world, _game, _move, enemy);
+		attackEnemy(_self, _world, _game, _move, enemy);		
 		return;
 	}
 			
 	// ≈сли осталось мало жизненной энергии, отступаем задом к предыдущей ключевой точке на линии.
-	if( d_f <= self.getRadius() + closestFriend->getRadius() + 1 )
+	if (d_f <= self.getRadius() + closestFriend->getRadius() + 1) //застр€ли изза друга
 		goTangentialFrom(Point2D(closestFriend->getX(), closestFriend->getY()), _move);
-	else if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR)	
-		goBackwardTo(getPreviousWaypoint(), _move);	
+	else if (_self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1) // застр€ли хрен пойми почему
+	{
+		_move.setAction(ActionType::ACTION_STAFF); // не работает, переделать, учесть деревь€
+		_move.setSpeed(-game.getWizardForwardSpeed());
+	}
+	else if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR)
+		goBackwardTo(getPreviousWaypoint(), _move);
 	else if (d_e < 600)                                            // враг близко - идем к нему
 		goTo(Point2D(closestEnemy->getX(), closestEnemy->getY()), _move);
-	else if (d_f > 400 && d_f< 6000 && closestFriend->getRadius() < 100)// бежим к друзь€м, если они далеко b и это не база // надо бы избегать деревьев
+	else if (returnToLastPos)
+		goTo(posBeforeBonus, _move);
+	else if (d_f > 400 && d_f < 6000 && closestFriend->getRadius() < 100)// бежим к друзь€м, если они далеко b и это не база // надо бы избегать деревьев
 		goTo(Point2D(closestFriend->getX(), closestFriend->getY()), _move);
-	else                                                           // ≈сли нет других действий, просто продвигаемс€ вперЄд.
-		goTo(getNextWaypoint(), _move);
+	
+	else // ≈сли нет других действий, просто продвигаемс€ вперЄд.
+		
+		goTo(getNextWaypoint(), _move);	
 	return;
 }
 
@@ -103,7 +126,7 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 				Point2D(900.0, mapSize - 1000),
 				Point2D(1800.0, mapSize - 1600),
 				Point2D(2000, 1900.0),
-				Point2D(2400, 1200.0),
+				Point2D(2400, 1600.0),
 				Point2D(mapSize - 700.0, 700.0)
 		}));
 
@@ -111,8 +134,9 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 				Point2D(100.0, mapSize * 0.9),
 				Point2D(200.0, mapSize * 0.75),
 				Point2D(200.0, mapSize * 0.5),
-				Point2D(200.0, mapSize * 0.2),
-				Point2D(600.0, 600.0),
+				Point2D(200.0, 700),				
+				//Point2D(800.0, 800.0),
+				//Point2D(600.0, 600.0),
 				Point2D(mapSize * 0.2, 200.0),
 				Point2D(mapSize * 0.5, 200.0),
 				Point2D(mapSize * 0.75, 200.0),
@@ -122,11 +146,11 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_BOTTOM, vector<Point2D>{
 			 Point2D(100.0, mapSize - 100.0), // go down
 			 Point2D(600.0, mapSize - 200.0),
-			 Point2D(mapSize * 0.25, mapSize - 200.0),
+			 Point2D(mapSize * 0.25, mapSize - 150.0),
 			 Point2D(mapSize * 0.5, mapSize - 200.0),
 			 Point2D(mapSize * 0.75, mapSize - 200.0),
-			 Point2D(mapSize - 600.0, mapSize - 600.0),
-			 Point2D(mapSize - 200.0, mapSize * 0.75),
+			 Point2D(3300.0, mapSize - 200.0),			 
+			 Point2D(mapSize - 200.0, 3300),
 			 Point2D(mapSize - 200.0, mapSize * 0.5),
 			 Point2D(mapSize - 200.0, mapSize * 0.25),
 			 Point2D(mapSize - 200.0, 200.0)
@@ -152,26 +176,7 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 			break;
 		default: break;
 		}
-		/*switch (static_cast<int>(_self.getId()))
-		{
-		case 1:
-		case 2:
-		case 6:
-		case 7:
-			lane = LaneType::LANE_TOP;
-			break;
-		case 3:
-		case 8:
-			lane = LaneType::LANE_MIDDLE;
-			break;
-		case 4:
-		case 5:
-		case 9:
-		case 10:
-			lane = LaneType::LANE_BOTTOM;
-			break;
-		default: break;
-		}*/
+	
 		waypoints = waypointsByLane[lane];
 
 		// Ќаша стратеги€ исходит из предположени€, что заданные нами ключевые точки упор€дочены по убыванию
@@ -223,7 +228,7 @@ Point2D MyStrategy::getPreviousWaypoint() {
 	Point2D firstWaypoint = waypoints[0];
 
 	for (int waypointIndex = waypoints.size() - 1; waypointIndex > 0; --waypointIndex) {
-		Point2D waypoint = waypoints[waypointIndex];
+		Point2D waypoint = waypoints[waypointIndex] + (rand()%2? Point2D(35,35) : Point2D(-35, -35));
 
 		if (waypoint.getDistanceTo(self) <= WAYPOINT_RADIUS) {
 			return waypoints[waypointIndex - 1];
@@ -280,23 +285,72 @@ void MyStrategy::goTangentialFrom(const Point2D & point, Move& _move)
 	}
 }
 
+int MyStrategy::getCloseToBonus(model::Move & _move)
+{
+	bonusCheckTicks++;
+	if (bonusCheckTicks > 500) // если бонус провер€ли давно, то он не проверен
+		bonusChecked = false;  
+	if (bonusChecked) return 0; // если недавно - уходим
+
+	double mapSize = game.getMapSize();
+	double x = self.getX();
+	double y = self.getY();
+	posBeforeBonus = Point2D(x, y);
+	int i = (game.getBonusAppearanceIntervalTicks() - world.getTickIndex() % game.getBonusAppearanceIntervalTicks());
+	if (i > 500) return 0;
+	
+	
+	// раздел€ем зоны на близость к бонусам
+	if (x < 800 && y < 800) return 1;
+	if (x < 1600 && y < 200) return 11;
+	if (abs(x - y) < 300) return 2;
+	if (x > 2000 && x < 3000 && fabs(mapSize - x + y < 300)) return 21;
+	if ((x > mapSize - 800 && y < 800)) return 3;
+	if ((x > mapSize - 200 && y > mapSize - 1600)) 31;
+    //	держимс€ ближе к бонусу	 
+	return false;
+}
+
 bool MyStrategy::getBonus(model::Move & _move)
 {
 	double mapSize = game.getMapSize();
 	double d1 = self.getDistanceTo(mapSize*0.3, mapSize*0.3);
 	double d2 = self.getDistanceTo(mapSize*0.7, mapSize*0.7);
+
 	vector<Bonus> bonuses = world.getBonuses();
-	if (bonuses.size() != 0 || (world.getTickCount() / game.getBonusAppearanceIntervalTicks()) < 300)
+	
+	int i = (game.getBonusAppearanceIntervalTicks() - world.getTickIndex()%game.getBonusAppearanceIntervalTicks());
+	if (bonuses.size() != 0)
 	{
+		returnToLastPos = true;
 		if (fabs(self.getX() - self.getY()) < 400 && (d1 < 800 || d2 < 800))
-		if (d1 < d2)
-			goTo(Point2D(mapSize*0.3, mapSize*0.3), _move);
-		else
-			goTo(Point2D(mapSize*0.7, mapSize*0.7), _move);
+			if (d1 < d2)
+			{
+				for (auto & i : bonuses)
+
+					if (fabs(self.getDistanceTo(i) < d1) < 50)
+					{
+						goTo(Point2D(mapSize*0.3, mapSize*0.3), _move);						
+						return true;
+					}
+			}
+			else
+			{
+				for (auto & i : bonuses)
+					if (fabs(self.getDistanceTo(i) < d2) < 50)
+					{
+						goTo(Point2D(mapSize*0.7, mapSize*0.7), _move);						
+						return true;
+					}
+			}
+		
+	}
+	else if (d1 < 600 || d2 < 600)
+	{
+		bonusChecked = true;
+		bonusCheckTicks = 0;
 	}
 	
-	
-	double ticksToBonus = game.getBonusAppearanceIntervalTicks();
 	return false;
 }
 
@@ -596,6 +650,10 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 
 
 MyStrategy::MyStrategy() {
+
+	bonusCheckTicks = 0;
+	bonusChecked = true;
+	returnToLastPos = true;
 	LOW_HP_FACTOR = 0.25;
 	WAYPOINT_RADIUS = 100.0;
 }

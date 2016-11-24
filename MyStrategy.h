@@ -47,6 +47,10 @@ public:
 	double getDistanceTo(model::Unit  unit) {
 		return getDistanceTo(unit.getX(), unit.getY());
 	}
+	Point2D operator+ (Point2D& p)
+	{
+		return Point2D(x + p.x, y + p.y);
+	}
 };
 
 
@@ -56,6 +60,9 @@ protected:
 	double WAYPOINT_RADIUS;
 	double LOW_HP_FACTOR;
 	double cooldown;
+
+	bool bonusChecked;
+	int bonusCheckTicks;
 
 	std::map<model::LaneType, std::vector<Point2D>> waypointsByLane;
 
@@ -79,6 +86,10 @@ protected:
 	model::LivingUnit * closestMinion;
 	model::LivingUnit * weakestEnemy;
 
+	Point2D myLastPos;
+	Point2D posBeforeBonus;
+	bool returnToLastPos;
+
 
 	void initializeStrategy(const model::Wizard& _self, const model::Game& _game);
 	void initializeTick(const model::Wizard& _self, const model::World& _world, const model::Game& _game, const model::Move& _move);
@@ -88,6 +99,7 @@ protected:
 	void goBackwardTo(const Point2D & point, model::Move& _move);
 	void goBackwardFrom(const Point2D & point, model::Move& _move);
 	void goTangentialFrom(const Point2D & point, model::Move& _move);
+	int getCloseToBonus(model::Move& _move);
 	bool getBonus(model::Move& _move);
 	model::LivingUnit&  getNearestTarget();
 	model::LivingUnit&  getNearestBuilding();
