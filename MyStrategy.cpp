@@ -181,12 +181,12 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 		case 2:
 		case 6:
 		case 7:
-			//lane = LaneType::LANE_TOP;
-		//	break;
+			lane = LaneType::LANE_TOP;
+			break;
 		case 3:
 		case 8:
-		//	lane = LaneType::LANE_MIDDLE;
-		//	break;
+			lane = LaneType::LANE_MIDDLE;
+			break;
 		case 4:
 		case 5:
 		case 9:
