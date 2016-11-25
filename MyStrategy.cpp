@@ -247,6 +247,10 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 		else
 			waypoints = waypointsByLane[lane];
 
+		//if (!self.isMaster())
+		//	if (self.getMessages()[_self.getId()].getLane()  != LaneType::_LANE_UNKNOWN_)
+		//		waypoints = waypointsByLane[self.getMessages()[_self.getId()].getLane()];
+		
 		// Ќаша стратеги€ исходит из предположени€, что заданные нами ключевые точки упор€дочены по убыванию
 		// дальности до последней ключевой точки. —ейчас проверка этого факта отключена, однако вы можете
 		// написать свою проверку, если решите изменить координаты ключевых точек.
@@ -484,7 +488,7 @@ bool MyStrategy::getBonus(model::Move & _move)
 	else if ( (d1 < self.getVisionRange() - 10 || d2 < self.getVisionRange() - 10) && world.getTickIndex() - lastBonusCheck > game.getBonusAppearanceIntervalTicks())
 	{
 		bonusChecked = true;
-		lastBonusCheck = world.getTickIndex();
+		lastBonusCheck = world.getTickIndex() - world.getTickIndex() % 2500;
 		bonusCheckTicks = 0;
 	}
 	
