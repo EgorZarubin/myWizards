@@ -46,29 +46,41 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	case 0: break;
 	case 1:
 		if (d_wt < _self.getCastRange())
+		{
 			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
-		if (self.getDistanceTo(1200, 1200) > self.getVisionRange() - 10)
-			goBackwardTo(Point2D(800, 800), _move);
+			if (self.getDistanceTo(1200, 1200) > self.getVisionRange() - 10)
+				goBackwardTo(Point2D(800, 800), _move);
+		}
+		else goTo(Point2D(800, 800), _move);
 		return;
 	case 11:
 		if (d_wt < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
-		else 
-			goBackwardTo(Point2D(750, 300), _move); return;
+		else
+			goBackwardTo(Point2D(750, 300), _move);
+		return;
 	case 2:
 		if (d_wt < _self.getCastRange())
+		{
 			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
-		if (self.getDistanceTo(1200, 1200) > self.getVisionRange() - 10 )
-			goBackwardTo(Point2D(1600, 1600), _move); return;
+			if (self.getDistanceTo(1200, 1200) > self.getVisionRange() - 10)
+				goBackwardTo(Point2D(1600, 1600), _move);
+		}
+		else goTo(Point2D(1600, 1600), _move);
+		return;
 	case 21:
 		if (d_wt < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
 		goBackwardTo(Point2D(2000, 2000), _move); return;
 	case 3:
 		if (d_wt < _self.getCastRange())
+		{
 			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
-		if (self.getDistanceTo(2800, 2800) > self.getVisionRange() - 10)
-		goBackwardTo(Point2D(3200, 3200), _move); return;
+			if (self.getDistanceTo(2800, 2800) > self.getVisionRange() - 10)
+				goBackwardTo(Point2D(3200, 3200), _move);
+		}
+		else goTo(Point2D(3200, 3200), _move);
+		return;
 	case 31:
 		if (d_wt < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
