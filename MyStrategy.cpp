@@ -88,9 +88,8 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	default: break;
 	}
 
-	LivingUnit nearestTarget = getCloseAndWeakTarget();// getNearestTarget();
-
-
+	//LivingUnit nearestTarget = getCloseAndWeakTarget();// getNearestTarget();
+	
 	// приоритет атаки
 	if (d_e < _self.getCastRange()) //если хоть кто то в пределах досягаемости
 	{		
