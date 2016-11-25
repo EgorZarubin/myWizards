@@ -363,29 +363,41 @@ bool MyStrategy::getBonus(model::Move & _move)
 		returnToLastPos = true;
 	
 		double distance = 6000;
-		double dist = 6000;
+		double c_dist = 6000;// расстояние до ближайшего врага
+		double e_d = 6000;
 		if(closestWizard != nullptr) distance = self.getDistanceTo(*closestWizard);
-		if (closestEnemy != nullptr) dist = self.getDistanceTo(*closestEnemy);
+		if (closestEnemy != nullptr) c_dist = self.getDistanceTo(*closestEnemy);
+		LivingUnit *enemy;
 		if (fabs(self.getX() - self.getY()) < 400 && (d1 < 800 || d2 < 800))
 			if (d1 < d2)
 			{
 				for (auto & i : bonuses)
 					if (fabs(self.getDistanceTo(i) - d1) < 50) // если это тот бонус, который ближний
 					{
-						goTo(Point2D(mapSize*0.3, mapSize*0.3), _move);
-						//атакуем, если видим вражеского волшебника
-						if (distance < self.getCastRange() && fabs(self.getAngleTo(*closestWizard)) < game.getStaffSector() / 2.0)
+						if ((c_dist < 80) && (fabs(fabs(self.getAngleTo(mapSize*0.3, mapSize*0.3) - PI) < game.getStaffSector()))) //если враг близко и бонус с другой стороны
 						{
-							double distance = self.getDistanceTo(*closestWizard);
-							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance <= 70)
+							goBackwardTo(Point2D(mapSize*0.3, mapSize*0.3), _move);
+							enemy = closestEnemy;
+							e_d = c_dist;
+						}
+						else
+						{
+							goTo(Point2D(mapSize*0.3, mapSize*0.3), _move);
+							enemy = closestWizard;
+							e_d = distance;
+						}
+						//атакуем, если видим вражеского волшебника
+						if (e_d < self.getCastRange() && fabs(self.getAngleTo(*enemy)) < game.getStaffSector() / 2.0)
+						{							
+							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 70)
 								_move.setAction(ActionType::ACTION_STAFF);
 							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE > 10])
 								_move.setAction(ActionType::ACTION_FIREBALL);
 							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
 							{
 								_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
-								_move.setCastAngle(self.getAngleTo(*closestWizard));
-								_move.setMinCastDistance(distance - (*closestWizard).getRadius() + game.getMagicMissileRadius());
+								_move.setCastAngle(self.getAngleTo(*enemy));
+								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getMagicMissileRadius());
 							}
 						}
 							return true;
@@ -396,20 +408,31 @@ bool MyStrategy::getBonus(model::Move & _move)
 				for (auto & i : bonuses)
 					if (fabs(self.getDistanceTo(i) - d2) < 50) // если это тот бонус, который ближний
 					{
-						goTo(Point2D(mapSize*0.7, mapSize*0.7), _move);	
-						//атакуем, если видим вражеского волшебника
-						if (distance < self.getCastRange() && fabs(self.getAngleTo(*closestWizard)) < game.getStaffSector() / 2.0)
+						if ((c_dist < 80) && (fabs(fabs(self.getAngleTo(mapSize*0.3, mapSize*0.3) - PI) < game.getStaffSector()))) // враг близко и бонус с другой стороны, то основной враг - он
 						{
-							double distance = self.getDistanceTo(*closestWizard);
-							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance <= 70)
+							goBackwardTo(Point2D(mapSize*0.7, mapSize*0.7), _move);
+							enemy = closestEnemy;
+							e_d = c_dist;
+						}
+						else
+						{
+							goTo(Point2D(mapSize*0.7, mapSize*0.7), _move);
+							enemy = closestWizard;
+							e_d = distance;
+						}
+
+						//атакуем, если видим вражеского волшебника					
+						if (e_d < self.getCastRange() && fabs(self.getAngleTo(*enemy)) < game.getStaffSector() / 2.0)
+						{
+							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 70)
 								_move.setAction(ActionType::ACTION_STAFF);
 							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE > 10])
 								_move.setAction(ActionType::ACTION_FIREBALL);
 							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
 							{
 								_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
-								_move.setCastAngle(self.getAngleTo(*closestWizard));
-								_move.setMinCastDistance(distance - (*closestWizard).getRadius() + game.getMagicMissileRadius());
+								_move.setCastAngle(self.getAngleTo(*enemy));
+								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getMagicMissileRadius());
 							}
 						}
 						return true;
