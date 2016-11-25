@@ -64,6 +64,10 @@ protected:
 	bool bonusChecked;
 	int bonusCheckTicks;
 
+	int STRAFE_FACTOR;
+	int strafeTicks;
+	int lastStrafeDirection;
+
 	std::map<model::LaneType, std::vector<Point2D>> waypointsByLane;
 
 	//Random random;
@@ -108,6 +112,7 @@ protected:
 	model::LivingUnit&  getNearestFriend();
 	model::LivingUnit&  getCloseAndWeakTarget();
 	void getTargets();
+	void setStrafe(model::Move& _move);
 
 	void attackEnemy(const model::Wizard& _self, const model::World& _world, const model::Game& _game, model::Move& _move, const model::LivingUnit& enemy);
 

@@ -24,8 +24,8 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 
 	// Постоянно двигаемся из-стороны в сторону, чтобы по нам было сложнее попасть.
 	// Считаете, что сможете придумать более эффективный алгоритм уклонения? Попробуйте! ;)
-	_move.setStrafeSpeed( rand()%2 ? _game.getWizardStrafeSpeed() : -_game.getWizardStrafeSpeed());
-	
+	//_move.setStrafeSpeed( rand()%2 ? _game.getWizardStrafeSpeed() : -_game.getWizardStrafeSpeed());
+	setStrafe(_move);
 	if (getBonus(_move)) return;	
 	
 	getTargets();
@@ -363,13 +363,14 @@ bool MyStrategy::getBonus(model::Move & _move)
 		returnToLastPos = true;
 	
 		double distance = 6000;
+		double dist = 6000;
 		if(closestWizard != nullptr) distance = self.getDistanceTo(*closestWizard);
+		if (closestEnemy != nullptr) dist = self.getDistanceTo(*closestEnemy);
 		if (fabs(self.getX() - self.getY()) < 400 && (d1 < 800 || d2 < 800))
 			if (d1 < d2)
 			{
 				for (auto & i : bonuses)
-
-					if (fabs(self.getDistanceTo(i) < d1) < 50)
+					if (fabs(self.getDistanceTo(i) - d1) < 50) // если это тот бонус, который ближний
 					{
 						goTo(Point2D(mapSize*0.3, mapSize*0.3), _move);
 						//атакуем, если видим вражеского волшебника
@@ -393,7 +394,7 @@ bool MyStrategy::getBonus(model::Move & _move)
 			else
 			{
 				for (auto & i : bonuses)
-					if (fabs(self.getDistanceTo(i) < d2) < 50)
+					if (fabs(self.getDistanceTo(i) - d2) < 50) // если это тот бонус, который ближний
 					{
 						goTo(Point2D(mapSize*0.7, mapSize*0.7), _move);	
 						//атакуем, если видим вражеского волшебника
@@ -688,6 +689,17 @@ void MyStrategy::getTargets()
 	return;
 }
 
+void MyStrategy::setStrafe(model::Move & _move)
+{
+	if (strafeTicks >= STRAFE_FACTOR)
+	{
+		strafeTicks = 0;
+		lastStrafeDirection = rand() % 2 ? 1 : -1;
+	}
+	_move.setStrafeSpeed(lastStrafeDirection * game.getWizardStrafeSpeed());
+	strafeTicks++;
+}
+
 void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Game& _game, Move& _move, const LivingUnit& enemy)
 {
 	double distance = _self.getDistanceTo(enemy);	
@@ -727,4 +739,10 @@ MyStrategy::MyStrategy() {
 	returnToLastPos = true;
 	LOW_HP_FACTOR = 0.25;
 	WAYPOINT_RADIUS = 100.0;
+
+	int bonusCheckTicks = 0;
+
+	STRAFE_FACTOR = 3;
+	strafeTicks = 0;
+	lastStrafeDirection = 0;
 }
