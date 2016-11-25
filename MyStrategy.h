@@ -105,12 +105,6 @@ protected:
 	void goTangentialFrom(const Point2D & point, model::Move& _move);
 	int getCloseToBonus(model::Move& _move);
 	bool getBonus(model::Move& _move);
-	model::LivingUnit&  getNearestTarget();
-	model::LivingUnit&  getNearestBuilding();
-	model::LivingUnit&  getNearestWizard();
-	model::LivingUnit&  getNearestMinion();
-	model::LivingUnit&  getNearestFriend();
-	model::LivingUnit&  getCloseAndWeakTarget();
 	void getTargets();
 	void setStrafe(model::Move& _move);
 

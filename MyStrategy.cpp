@@ -436,8 +436,7 @@ bool MyStrategy::getBonus(model::Move & _move)
 						}
 						return true;
 					}
-			}
-		
+			}		
 	}
 	else if ( (d1 < 600 || d2 < 600 ) && i > 500)
 	{
@@ -446,188 +445,6 @@ bool MyStrategy::getBonus(model::Move & _move)
 	}
 	
 	return false;
-}
-
-
-
-LivingUnit & MyStrategy::getNearestTarget()
-{		
-	std::vector<LivingUnit *> targets;
-	targets.clear();
-	//LivingUnit =
-	for(unsigned int i = 0; i < world.getBuildings().size(); i++)
-	{
-		targets.push_back( new LivingUnit(world.getBuildings()[i] ));
-	}
-	for (unsigned int i = 0; i < world.getWizards().size(); i++)
-	{
-		targets.push_back(new LivingUnit(world.getWizards()[i]));
-	}
-	for (unsigned int i = 0; i < world.getMinions().size(); i++)
-	{
-		targets.push_back(new LivingUnit(world.getMinions()[i]));
-	}	
-
-	LivingUnit * unit = &self;
-	if (targets.size() == 0) return *unit;
-	double minDist = 1e10;
-
-	for (auto &u : targets)
-	{
-		if ( !(u->getFaction() == Faction::FACTION_NEUTRAL || u->getFaction() == self.getFaction()) &&	(u->getDistanceTo(self) < minDist))
-		{
-			minDist = u->getDistanceTo(self);
-			unit = u;
-		}
-	}
-
-	/*std::sort(targets.begin(), targets.end(),
-		[](LivingUnit* u1, LivingUnit* u2) {
-		const double _x = self.getX();
-		const double _y = self.getY();
-		return (u1->getDistanceTo(_x,_y) < u2->getDistanceTo(0,0));
-	});*/
-
-	return *unit;
-}
-
-LivingUnit & MyStrategy::getNearestBuilding()
-{
-	std::vector<LivingUnit *> targets;
-	for (unsigned int i = 0; i < world.getBuildings().size(); i++)
-	{
-		targets.push_back(new LivingUnit(world.getBuildings()[i]));
-	}
-	
-	LivingUnit * unit = &self;
-	if (targets.size() == 0) return *unit;
-	double minDist = 1e10;
-
-	for (auto &u : targets)
-	{
-		if (!(u->getFaction() == Faction::FACTION_NEUTRAL || u->getFaction() == self.getFaction()) && (u->getDistanceTo(self) < minDist))
-		{
-			minDist = u->getDistanceTo(self);
-			unit = u;
-		}
-	}
-	closestBuilding = unit;
-	return *unit;
-}
-
-LivingUnit & MyStrategy::getNearestWizard()
-{
-	std::vector<LivingUnit *> targets;
-	for (unsigned int i = 0; i < world.getWizards().size(); i++)
-	{
-		targets.push_back(new LivingUnit(world.getWizards()[i]));
-	}
-
-	LivingUnit * unit = &self;
-	if (targets.size() == 0) return *unit;
-	double minDist = 1e10;
-
-	for (auto &u : targets)
-	{
-		if (!(u->getFaction() == Faction::FACTION_NEUTRAL || u->getFaction() == self.getFaction()) && (u->getDistanceTo(self) < minDist))
-		{
-			minDist = u->getDistanceTo(self);
-			unit = u;
-		}
-	}
-	closestWizard = unit;
-	return *unit;
-}
-
-LivingUnit & MyStrategy::getNearestMinion()
-{
-	std::vector<LivingUnit *> targets;
-	for (unsigned int i = 0; i < world.getMinions().size(); i++)
-	{
-		targets.push_back(new LivingUnit(world.getMinions()[i]));
-	}
-
-	LivingUnit * unit = &self;
-	if (targets.size() == 0) return *unit;
-	double minDist = 1e10;
-
-	for (auto &u : targets)
-	{
-		if (!(u->getFaction() == Faction::FACTION_NEUTRAL || u->getFaction() == self.getFaction()) && (u->getDistanceTo(self) < minDist))
-		{
-			minDist = u->getDistanceTo(self);
-			unit = u;
-		}
-	}
-	closestMinion = unit;
-	return *unit;
-}
-
-LivingUnit & MyStrategy::getNearestFriend()
-{
-	std::vector<LivingUnit *> targets;
-
-	for (unsigned int i = 0; i < world.getBuildings().size(); i++)
-	{
-		targets.push_back(new LivingUnit(world.getBuildings()[i]));
-	}
-	for (unsigned int i = 0; i < world.getWizards().size(); i++)
-	{
-		targets.push_back(new LivingUnit(world.getWizards()[i]));
-	}
-	for (unsigned int i = 0; i < world.getMinions().size(); i++)
-	{
-		targets.push_back(new LivingUnit(world.getMinions()[i]));
-	}
-
-	LivingUnit * unit = &self;
-	if (targets.size() == 0) return *unit;
-	double minDist = 1e10;
-
-	for (auto &u : targets)
-	{
-		if (u->getFaction() == self.getFaction() && (u->getDistanceTo(self) < minDist))
-		{
-			minDist = u->getDistanceTo(self);
-			unit = u;
-		}
-	}
-
-	return *unit;
-}
-
-LivingUnit & MyStrategy::getCloseAndWeakTarget()
-{
-	std::vector<LivingUnit *> targets;
-	for (unsigned int i = 0; i < world.getBuildings().size(); i++)
-	{
-		targets.push_back(new LivingUnit(world.getBuildings()[i]));
-	}
-	for (unsigned int i = 0; i < world.getWizards().size(); i++)
-	{
-		targets.push_back(new LivingUnit(world.getWizards()[i]));
-	}
-	for (unsigned int i = 0; i < world.getMinions().size(); i++)
-	{
-		targets.push_back(new LivingUnit(world.getMinions()[i]));
-	}
-
-	LivingUnit * unit = &self;
-	if (targets.size() == 0) return *unit;
-
-	std::sort(targets.begin(), targets.end(),
-		[](LivingUnit* u1, LivingUnit* u2) {
-		return (u1->getLife()/u1->getMaxLife() < u2->getLife()/u1->getMaxLife());
-	});
-
-	auto it = targets.begin();
-	while (it != targets.end() && ((*it)->getFaction() == self.getFaction() || ((*it)->getDistanceTo(self)) > self.getCastRange() || (*it)->getFaction() == Faction::FACTION_NEUTRAL))
-	{
-		it++;
-	}
-	if (it != targets.end())
-		unit = *it;
-	return *unit;
 }
 
 void MyStrategy::getTargets()
@@ -752,7 +569,6 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 		goBackwardTo(getPreviousWaypoint(), _move);
 	}	
 }
-
 
 MyStrategy::MyStrategy() {
 
