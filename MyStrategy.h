@@ -63,6 +63,8 @@ protected:
 
 	bool bonusChecked;
 	int bonusCheckTicks;
+	int lastBonusCheck;
+	model::LaneType changeLaneTo;
 
 	int STRAFE_FACTOR;
 	int strafeTicks;

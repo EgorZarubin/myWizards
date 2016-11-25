@@ -14,6 +14,7 @@ using namespace std;
 // 
 // сделать  хорошие опорные точки (возможно подходить к ним ближе)
 // улучшить движение задним ходом
+// пробегать через деревья, средний бонус из двух вариантов
 
 void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _game, Move& _move) {
   	
@@ -25,9 +26,14 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	// Постоянно двигаемся из-стороны в сторону, чтобы по нам было сложнее попасть.
 	// Считаете, что сможете придумать более эффективный алгоритм уклонения? Попробуйте! ;)
 	//_move.setStrafeSpeed( rand()%2 ? _game.getWizardStrafeSpeed() : -_game.getWizardStrafeSpeed());
+	
+	// амилитудно уворачиваемся от всего всегда 
 	setStrafe(_move);
+	
+	//если видим бонус - бежим к нему и все
 	if (getBonus(_move)) return;	
 	
+	//распределяем цели по типам: слабые, ближние, волшебники, миньоны
 	getTargets();
 	double d_f, d_e, d_w, d_b, d_m, d_wt;
 	d_f = d_e = d_w = d_b = d_m = d_wt = 6000;
@@ -38,6 +44,7 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	if (closestMinion != nullptr) d_m = _self.getDistanceTo(*closestMinion);
 	if (weakestEnemy != nullptr) d_wt = _self.getDistanceTo(*weakestEnemy);
 
+	//если время близко к бонусу, надо его взять
 	int closeToBonus = getCloseToBonus(_move);
 	switch (closeToBonus)
 	{
@@ -59,16 +66,25 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		else
 			goBackwardTo(Point2D(750, 300), _move);
 		return;
-	case 2:
+	case 21:	
 		if (d_wt < _self.getCastRange())
 		{
 			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
 			if (self.getDistanceTo(1200, 1200) > self.getVisionRange() - 10)
-				goBackwardTo(Point2D(1600, 1600), _move);
+				goBackwardTo(Point2D(1400, 1750), _move);
 		}
 		else goTo(Point2D(1600, 1600), _move);
 		return;
-	case 21:
+	case 22:
+		if (d_wt < _self.getCastRange())
+		{
+			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+			if (self.getDistanceTo(2800, 2800) > self.getVisionRange() - 10)
+				goBackwardTo(Point2D(2400, 2400), _move);
+		}
+		else goTo(Point2D(2400, 2400), _move);
+		return;
+	case 23:
 		if (d_wt < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
 		goBackwardTo(Point2D(2000, 2000), _move); return;
@@ -88,16 +104,26 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	default: break;
 	}
 
-	//LivingUnit nearestTarget = getCloseAndWeakTarget();// getNearestTarget();
+	//если мало жизней- отбегаем назад (стоит ли?) и все
+	if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR && _self.getDistanceTo(0,0) > 500)
+	{
+		goBackwardTo(getPreviousWaypoint(), _move);
+		return;
+	}
 	
-	// приоритет атаки
+	// приоритет атаки. сейчас это: совсем близкие чуваки, волшебники, самые слабые типы, башни, миньоны
 	if (d_e < _self.getCastRange()) //если хоть кто то в пределах досягаемости
 	{		
 		_move.setSpeed(0);
 		LivingUnit enemy = *closestEnemy;
+		
 		if (d_e < 100 || closestEnemy->getLife() <  24)
 		{
 			enemy = *closestEnemy;
+		}
+		else if (d_w < _self.getCastRange())
+		{
+			enemy = *closestWizard;//
 		}
 		else if (d_wt < _self.getCastRange())
 		{
@@ -106,33 +132,35 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		else if(d_b < _self.getCastRange())
 		{
 			enemy = *closestBuilding;//
-		}
-		else if (d_w < _self.getCastRange())
-		{
-			enemy = *closestWizard;//
-		}
+		}		
 		else if (d_m < _self.getCastRange())
 		{
 			enemy = *closestMinion;//
 		}
+				
 		attackEnemy(_self, _world, _game, _move, enemy);		
 		return;
 	}
 			
-	// Если осталось мало жизненной энергии, отступаем задом к предыдущей ключевой точке на линии.
+	
 	if (d_f <= self.getRadius() + closestFriend->getRadius() + 1) //застряли изза друга
 		goTangentialFrom(Point2D(closestFriend->getX(), closestFriend->getY()), _move);
+
 	else if (_self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1) // застряли хрен пойми почему
 	{
-		_move.setAction(ActionType::ACTION_STAFF); // не работает, переделать, учесть деревья
-		_move.setSpeed(-game.getWizardForwardSpeed());
+		_move.setAction(ActionType::ACTION_STAFF);
+		_move.setSpeed(-game.getWizardForwardSpeed()); // не работает, переделать, учесть деревья
 	}
-	else if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR)
+
+	else if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR) // Если осталось мало жизненной энергии, отступаем задом к предыдущей ключевой точке на линии.
 		goBackwardTo(getPreviousWaypoint(), _move);
+
 	else if (d_e < 600)                                            // враг близко - идем к нему
 		goTo(Point2D(closestEnemy->getX(), closestEnemy->getY()), _move);
+
 	else if (returnToLastPos)
 		goTo(posBeforeBonus, _move);
+
 	else if (d_f > 400 && d_f < 6000 && closestFriend->getRadius() < 100)// бежим к друзьям, если они далеко b и это не база // надо бы избегать деревьев
 		goTo(Point2D(closestFriend->getX(), closestFriend->getY()), _move);
 	
@@ -157,7 +185,8 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 		double mapSize = _game.getMapSize();
 		
 		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_MIDDLE, vector<Point2D>{
-			Point2D(100.0, mapSize - 600),
+			Point2D(100.0, mapSize - 500), 
+				Point2D(100.0, mapSize - 600),
 				Point2D(800.0, mapSize - 800),
 				Point2D(900.0, mapSize - 1000),
 				Point2D(1800.0, mapSize - 1600),
@@ -212,8 +241,11 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 			break;
 		default: break;
 		}
-	
-		waypoints = waypointsByLane[lane];
+
+		if (changeLaneTo != LaneType::_LANE_UNKNOWN_)
+			waypoints = waypointsByLane[changeLaneTo];
+		else
+			waypoints = waypointsByLane[lane];
 
 		// Наша стратегия исходит из предположения, что заданные нами ключевые точки упорядочены по убыванию
 		// дальности до последней ключевой точки. Сейчас проверка этого факта отключена, однако вы можете
@@ -322,18 +354,20 @@ void MyStrategy::goTangentialFrom(const Point2D & point, Move& _move)
 }
 
 int MyStrategy::getCloseToBonus(model::Move & _move)
-{
-	bonusCheckTicks++;
-	if (bonusCheckTicks > 500) // если бонус проверяли давно, то он не проверен
-		bonusChecked = false;  
-	if (bonusChecked) return 0; // если недавно - уходим
+{ 
+	if (world.getTickIndex() - lastBonusCheck < game.getBonusAppearanceIntervalTicks() - 250 ) return 0;
+
+	//bonusCheckTicks++;
+	//if (bonusCheckTicks > 500) // если бонус проверяли давно, то он не проверен
+	//	bonusChecked = false;  
+	//if (bonusChecked) return 0; // если недавно - уходим
 
 	double mapSize = game.getMapSize();
 	double x = self.getX();
 	double y = self.getY();
-	posBeforeBonus = Point2D(x, y);
+	posBeforeBonus = Point2D(x, y);	
 	int i = (game.getBonusAppearanceIntervalTicks() - world.getTickIndex() % game.getBonusAppearanceIntervalTicks());
-	if (i > 500) return 0;
+	//if (i > 500) return 0;
 	
 	
 	// разделяем зоны на близость к бонусам
@@ -341,8 +375,9 @@ int MyStrategy::getCloseToBonus(model::Move & _move)
 	if (x < 1600 && y < 200) return 11;
 	if ((x > mapSize - 820 && y > mapSize - 820)) return 3;
 	if ((x > mapSize - 200 && y > mapSize - 1600)) 31;
-	if (abs(x - y) < 300 && x < 2400) return 2;
-	if (x > 2000 && x < 3000 && fabs(mapSize - x + y < 300)) return 21;
+	if (abs(x - y) < 300 && ( x < mapSize -y )) return 21;
+	if (abs(x - y) < 300 && (x > mapSize - y)) return 22;
+	if (x > 2000 && x < 3000 && fabs(x + y - mapSize< 300)) return 23;
 	
     //	держимся ближе к бонусу	 
 	return 0;
@@ -359,7 +394,10 @@ bool MyStrategy::getBonus(model::Move & _move)
 	int i = (game.getBonusAppearanceIntervalTicks() - world.getTickIndex()%game.getBonusAppearanceIntervalTicks());
 	if (bonuses.size() != 0)
 	{
+		// бонус проверен, либо мы его захаваем либо не мы, точно пропадет(или меня завалят)
 		returnToLastPos = true;
+		bonusChecked = true;
+		lastBonusCheck =  world.getTickIndex() - world.getTickIndex()%2500; //кратная 2500 штука
 	
 		double distance = 6000;
 		double c_dist = 6000;// расстояние до ближайшего врага
@@ -373,6 +411,11 @@ bool MyStrategy::getBonus(model::Move & _move)
 				for (auto & i : bonuses)
 					if (fabs(self.getDistanceTo(i) - d1) < 50) // если это тот бонус, который ближний
 					{
+						if (lane == LaneType::LANE_MIDDLE)
+						{
+							changeLaneTo = LaneType::LANE_TOP;
+							posBeforeBonus = Point2D(600, 600); // so hardcoded
+						}
 						if ((c_dist < 80) && (fabs(fabs(self.getAngleTo(mapSize*0.3, mapSize*0.3) - PI) < game.getStaffSector()))) //если враг близко и бонус с другой стороны
 						{
 							goBackwardTo(Point2D(mapSize*0.3, mapSize*0.3), _move);
@@ -438,9 +481,10 @@ bool MyStrategy::getBonus(model::Move & _move)
 					}
 			}		
 	}
-	else if ( (d1 < 600 || d2 < 600 ) && i > 500)
+	else if ( (d1 < self.getVisionRange() - 10 || d2 < self.getVisionRange() - 10) && world.getTickIndex() - lastBonusCheck > game.getBonusAppearanceIntervalTicks())
 	{
 		bonusChecked = true;
+		lastBonusCheck = world.getTickIndex();
 		bonusCheckTicks = 0;
 	}
 	
@@ -572,6 +616,8 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 
 MyStrategy::MyStrategy() {
 
+	changeLaneTo = LaneType::_LANE_UNKNOWN_;
+	lastBonusCheck = 0;
 	bonusCheckTicks = 0;
 	bonusChecked = true;
 	returnToLastPos = true;
