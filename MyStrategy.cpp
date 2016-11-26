@@ -58,7 +58,8 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 			if (self.getDistanceTo(1200, 1200) > self.getVisionRange() - 10)
 				goBackwardTo(Point2D(800, 800), _move);
 		}
-		else goTo(Point2D(800, 800), _move);
+		else
+			goTo(Point2D(800, 800), _move);
 		return;
 	case 11:
 		if (d_wt < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
@@ -105,11 +106,11 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	}
 
 	//если мало жизней- отбегаем назад (стоит ли?) и все
-	if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR && _self.getDistanceTo(0,0) > 500)
-	{
-		goBackwardTo(getPreviousWaypoint(), _move);
-		return;
-	}
+	//if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR && _self.getDistanceTo(0,0) > 500)
+	//{
+	//	goBackwardTo(getPreviousWaypoint(), _move);
+	//	return;
+	//}
 	
 	// приоритет атаки. сейчас это: совсем близкие чуваки, волшебники, самые слабые типы, башни, миньоны
 	if (d_e < _self.getCastRange()) //если хоть кто то в пределах досягаемости
@@ -149,7 +150,7 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	else if (_self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1) // застряли хрен пойми почему
 	{
 		_move.setAction(ActionType::ACTION_STAFF);
-		_move.setSpeed(-game.getWizardForwardSpeed()); // не работает, переделать, учесть деревья
+		_move.setSpeed(rand()%2 ? -game.getWizardForwardSpeed() : game.getWizardForwardSpeed()); // не работает, переделать, учесть деревья
 	}
 
 	else if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR) // Если осталось мало жизненной энергии, отступаем задом к предыдущей ключевой точке на линии.
@@ -379,8 +380,8 @@ int MyStrategy::getCloseToBonus(model::Move & _move)
 	if (x < 1600 && y < 200) return 11;
 	if ((x > mapSize - 820 && y > mapSize - 820)) return 3;
 	if ((x > mapSize - 200 && y > mapSize - 1600)) 31;
-	if (abs(x - y) < 300 && ( x < mapSize -y )) return 21;
-	if (abs(x - y) < 300 && (x > mapSize - y)) return 22;
+	if (abs(x - y) < 300 && (x < mapSize - y) && x > mapSize - y - 1000) return 21;
+	if (abs(x - y) < 300 && (x > mapSize - y) && x < mapSize - y + 1000) return 22;
 	if (x > 2000 && x < 3000 && fabs(x + y - mapSize< 300)) return 23;
 	
     //	держимся ближе к бонусу	 
@@ -418,8 +419,11 @@ bool MyStrategy::getBonus(model::Move & _move)
 						if (lane == LaneType::LANE_MIDDLE)
 						{
 							changeLaneTo = LaneType::LANE_TOP;
-							posBeforeBonus = Point2D(600, 600); // so hardcoded
+							posBeforeBonus = Point2D(800, 800); // so hardcoded
 						}
+						else 
+							posBeforeBonus = Point2D(800, 800); // so hardcoded
+
 						if ((c_dist < 80) && (fabs(fabs(self.getAngleTo(mapSize*0.3, mapSize*0.3) - PI) < game.getStaffSector()))) //если враг близко и бонус с другой стороны
 						{
 							goBackwardTo(Point2D(mapSize*0.3, mapSize*0.3), _move);
@@ -454,6 +458,14 @@ bool MyStrategy::getBonus(model::Move & _move)
 				for (auto & i : bonuses)
 					if (fabs(self.getDistanceTo(i) - d2) < 50) // если это тот бонус, который ближний
 					{
+						if (lane == LaneType::LANE_MIDDLE)
+						{
+							changeLaneTo = LaneType::LANE_TOP;
+							posBeforeBonus = Point2D(3200, 3200); // so hardcoded
+						}
+						else
+							posBeforeBonus = Point2D(3200, 3200); // so hardcoded
+
 						if ((c_dist < 80) && (fabs(fabs(self.getAngleTo(mapSize*0.3, mapSize*0.3) - PI) < game.getStaffSector()))) // враг близко и бонус с другой стороны, то основной враг - он
 						{
 							goBackwardTo(Point2D(mapSize*0.7, mapSize*0.7), _move);
