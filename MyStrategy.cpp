@@ -18,6 +18,7 @@ using namespace std;
 
 void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _game, Move& _move) {
   	
+	if (_world.getTickIndex() < 300) return;
 	myLastPos = Point2D(self.getX(), self.getY());
 	prevLife = self.getLife();
 
@@ -158,10 +159,11 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	}
 			
 	
-	if (d_f <= self.getRadius() + closestFriend->getRadius() + 20) //застряли изза друга - обойдем его
+	if (_self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1 && d_f <= self.getRadius() + closestFriend->getRadius() + 20) //застряли изза друга - обойдем его
 	{
 		Point2D point = returnToLastPos ? posBeforeBonus : getNextWaypoint();
-		if (fabs(self.getAngleTo(*closestFriend) - self.getAngleTo(point.getX(), point.getY()) < PI / 2))
+		double  dA = fabs(self.getAngleTo(*closestFriend) - self.getAngleTo(point.getX(), point.getY()));
+		if (fabs(self.getAngleTo(*closestFriend) - self.getAngleTo(point.getX(), point.getY())) < PI / 2)
 			goTangentialFrom(Point2D(closestFriend->getX(), closestFriend->getY()), point, _move);
 		else
 			goTo(point, _move);
@@ -177,7 +179,8 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		else if (d_n < 6000 && d_n < self.getRadius() + closestNeutral->getRadius() + 5)
 		{
 			Point2D point = returnToLastPos ? posBeforeBonus : getNextWaypoint();
-			goTangentialFrom(Point2D(closestFriend->getX(), closestFriend->getY()), point, _move);
+			goTangentialFrom(Point2D(closestNeutral->getX(), closestNeutral->getY()), point, _move);
+			setStrafe(_move);
 		}
 		else
 			_move.setSpeed(rand() % 2 ? -game.getWizardForwardSpeed() : game.getWizardForwardSpeed()); // не работает, переделать, учесть деревья
@@ -358,6 +361,7 @@ void MyStrategy::goTo(const Point2D & point, Move& _move)
 
 void MyStrategy::goBackwardTo(const Point2D & point, Move& _move)
 {
+	if (self.getDistanceTo(point.getX(), point.getY()) < 10) return;
 	double angle = self.getAngleTo(2 * self.getX() - point.getX(), 2 * self.getY() - point.getY());
 
 	_move.setTurn(angle);
@@ -381,12 +385,16 @@ void MyStrategy::goTangentialFrom(const Point2D & point, const Point2D & nextPoi
 	double angle2 = self.getAngleTo(self.getX() + (point.getY() - self.getY()), self.getY() - (point.getX() - self.getX()));
 	double angle3 = self.getAngleTo(nextPoint.getX(), nextPoint.getY());
 	_move.setStrafeSpeed(0);
-	double angle = std::min(angle1, angle2);
+	double angle = fabs(angle1) < fabs(angle2)? angle1 : angle2;
 	
-	if (fabs(angle - angle3) < game.getWizardMaxTurnAngle() / 10) // иначе выйдем на орбиту
+	if (fabs(angle - angle3) < game.getWizardMaxTurnAngle()) // иначе выйдем на орбиту
+	{
+		_move.setTurn(angle3);
+		angle = angle3;
+	}
+	else
 		_move.setTurn(angle);
-	else _move.setTurn(angle3);
-
+	
 	if (fabs(angle) < game.getWizardMaxTurnAngle()) {
 		_move.setSpeed(game.getWizardForwardSpeed());
 	}
