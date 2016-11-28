@@ -35,7 +35,7 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	isSkillsEnable = game.isSkillsEnabled();	
 	if (isSkillsEnable)
 	{
-		learnSkills(_self);
+		learnSkills(_self, _move);
 		if (_self.isMaster()) setMessage();
 		else getMessage();
 	}
@@ -57,9 +57,9 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	case 1:
 		if (d_wt < _self.getCastRange())
 		{
-			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+			//attackEnemy(_self, _world, _game, _move, *weakestEnemy);
 			if (self.getDistanceTo(1200, 1200) > self.getVisionRange() - 10)
-				goBackwardToAdv(Point2D(800, 800), _move);
+				goToAdv(Point2D(800, 800), _move);//Backward
 		}
 		else
 			goToAdv(Point2D(800, 800), _move);
@@ -73,18 +73,18 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	case 21:	
 		if (d_wt < _self.getCastRange())
 		{
-			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+			//attackEnemy(_self, _world, _game, _move, *weakestEnemy);
 			if (self.getDistanceTo(1200, 1200) > self.getVisionRange() - 10)
-				goBackwardToAdv(Point2D(1400, 1750), _move);
+				goToAdv(Point2D(1400, 1750), _move); //Backward
 		}
 		else goToAdv(Point2D(1600, 1600), _move);
 		return;
 	case 22:
 		if (d_wt < _self.getCastRange())
 		{
-			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+			//attackEnemy(_self, _world, _game, _move, *weakestEnemy);
 			if (self.getDistanceTo(2800, 2800) > self.getVisionRange() - 10)
-				goBackwardToAdv(Point2D(2400, 2400), _move);
+				goToAdv(Point2D(2400, 2400), _move);//Backward
 		}
 		else goToAdv(Point2D(2400, 2400), _move);
 		return;
@@ -95,16 +95,16 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	case 3:
 		if (d_wt < _self.getCastRange())
 		{
-			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+			//attackEnemy(_self, _world, _game, _move, *weakestEnemy);
 			if (self.getDistanceTo(2800, 2800) > self.getVisionRange() - 10)
-				goBackwardToAdv(Point2D(3200, 3200), _move);
+				goToAdv(Point2D(3200, 3200), _move);//Backward
 		}
 		else goToAdv(Point2D(3200, 3200), _move);
 		return;
 	case 31:
 		if (d_wt < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
-		goBackwardToAdv(Point2D(3700, 750), _move); return;
+		goToAdv(Point2D(3700, 750), _move); return; // Backward
 	case 41:
 		if (d_w < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 			attackEnemy(_self, _world, _game, _move, *closestWizard);
@@ -169,7 +169,7 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		goToAdv(Point2D(closestFriend->getX(), closestFriend->getY()), _move);
 	
 	else // ≈сли нет других действий, просто продвигаемс€ вперЄд.		
-		goTo(getNextWaypoint(), _move);	
+		goToAdv(getNextWaypoint(), _move);	
 	return;
 }
 
@@ -378,7 +378,7 @@ void MyStrategy::goTangentialFrom(const Point2D & point, const Point2D & nextPoi
 
 int MyStrategy::getCloseToBonus(model::Move & _move)
 { 
-	if (world.getTickIndex() - lastBonusCheck < game.getBonusAppearanceIntervalTicks() - 400 ) return 0;
+	if (world.getTickIndex() - lastBonusCheck < game.getBonusAppearanceIntervalTicks() - 350 ) return 0;
 
 	//bonusCheckTicks++;
 	//if (bonusCheckTicks > 500) // если бонус провер€ли давно, то он не проверен
@@ -464,13 +464,13 @@ bool MyStrategy::getBonus(model::Move & _move)
 							setStrafe(_move);
 							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 70)
 								_move.setAction(ActionType::ACTION_STAFF);
-							else if ( isSkillsEnable && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
+							else if ( isSkillsEnable && numOfLearnedSkills > 9 && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
 							{
 								_move.setAction(ActionType::ACTION_FROST_BOLT);
 								_move.setCastAngle(self.getAngleTo(*enemy));
 								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getFrostBoltRadius());
 							}
-							else if (isSkillsEnable && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
+							else if (isSkillsEnable && numOfLearnedSkills > 14 && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
 							{
 								_move.setAction(ActionType::ACTION_FIREBALL);
 								_move.setCastAngle(self.getAngleTo(*enemy));
@@ -517,13 +517,13 @@ bool MyStrategy::getBonus(model::Move & _move)
 							setStrafe(_move);
 							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 70)
 								_move.setAction(ActionType::ACTION_STAFF);
-							else if (isSkillsEnable && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
+							else if (isSkillsEnable && numOfLearnedSkills>9 && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
 							{
 								_move.setAction(ActionType::ACTION_FROST_BOLT);
 								_move.setCastAngle(self.getAngleTo(*enemy));
 								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getFrostBoltRadius());
 							}
-							else if (isSkillsEnable && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
+							else if (isSkillsEnable && numOfLearnedSkills>14 && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
 							{
 								_move.setAction(ActionType::ACTION_FIREBALL);
 								_move.setCastAngle(self.getAngleTo(*enemy));
@@ -718,7 +718,7 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 			_move.setTurn(angle);
 		else dodgeFrom(_self, _world, _game, _move, enemy);
 	}
-	else if (distance < 400)
+	else if (distance < self.getCastRange() - 100)
 	{
 		goBackwardToAdv(getPreviousWaypoint(), _move);
 	}	
@@ -733,8 +733,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 	
 
 	if (_self.getRemainingActionCooldownTicks() == 0)
-	{
-		int i = self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT];
+	{		
 		// ≈сли цель перед нами, ...
 		if (fabs(angle) < _game.getStaffSector() / 2.0)
 		{
@@ -744,7 +743,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 				_move.setAction(ActionType::ACTION_STAFF);
 				return;
 			}
-			else if (learnedSkills[int(SkillType::SKILL_FROST_BOLT)] && (enemy.getMaxLife() / (enemy.getLife())) > 4 && /*enemy.getRadius() == 35 &&*/
+			else if (numOfLearnedSkills > 9 && (enemy.getMaxLife() / (enemy.getLife())) > 4 && /*enemy.getRadius() == 35 &&*/
 				self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
 			{
 				_move.setTurn(angle);
@@ -753,7 +752,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 				_move.setMinCastDistance(distance - (enemy).getRadius() + game.getFrostBoltRadius());
 				lastDodgeDir *= -1;
 			}
-			else if (learnedSkills[int(SkillType::SKILL_FIREBALL)] && _self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10 &&
+			else if (numOfLearnedSkills > 14 && _self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10 &&
 				self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FIREBALL] == 0)
 			{
 				_move.setTurn(angle);
@@ -780,7 +779,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 	}
 	//else if (distance < 100)
 	//	goBackwardFrom(Point2D(enemy.getX(), enemy.getY()), _move);
-	else if (distance < 400)
+	else if (distance < self.getCastRange() - 100)
 	{
 		goBackwardTo(getPreviousWaypoint(), _move);
 	}
@@ -789,6 +788,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 
 void MyStrategy::dodgeFrom(const model::Wizard & _self, const model::World & _world, const model::Game & _game, model::Move & _move, const model::LivingUnit & enemy)
 {
+	if (self.getLife() == self.getMaxLife()) return;
 	Point2D point = Point2D(enemy.getX(), enemy.getY());
 
 	double angle1 = self.getAngleTo(self.getX() - (point.getY() - self.getY()), self.getY() + (point.getX() - self.getX()));
@@ -802,10 +802,6 @@ void MyStrategy::dodgeFrom(const model::Wizard & _self, const model::World & _wo
 	if (fabs(angle) < game.getWizardMaxTurnAngle()) {
 		_move.setSpeed(game.getWizardForwardSpeed());
 	}
-}
-
-void MyStrategy::learnSkills(const model::Wizard & _self)
-{
 }
 
 void MyStrategy::goToAdv(const Point2D & point, model::Move & _move)
@@ -841,12 +837,47 @@ void MyStrategy::goToAdv(const Point2D & point, model::Move & _move)
 		goTo(point, _move);
 }
 
+
+void MyStrategy::learnSkills(const model::Wizard & _self, model::Move& _move)
+{
+	SkillType skill = SkillType::_SKILL_UNKNOWN_;
+	switch (nextSkill)
+	{
+	case 0:	skill = SkillType::SKILL_RANGE_BONUS_PASSIVE_1; break;
+	case 1: skill = SkillType::SKILL_RANGE_BONUS_AURA_1; break;
+	case 2: skill = SkillType::SKILL_RANGE_BONUS_PASSIVE_2; break;
+	case 3: skill = SkillType::SKILL_RANGE_BONUS_AURA_2; break;
+	case 4: skill = SkillType::SKILL_ADVANCED_MAGIC_MISSILE; break;
+	//next 
+	
+	case 5: skill = SkillType::SKILL_MAGICAL_DAMAGE_BONUS_PASSIVE_1; break;
+	case 6: skill = SkillType::SKILL_MAGICAL_DAMAGE_BONUS_AURA_1; break;
+	case 7: skill = SkillType::SKILL_MAGICAL_DAMAGE_BONUS_PASSIVE_2; break;
+	case 8: skill = SkillType::SKILL_MAGICAL_DAMAGE_BONUS_AURA_2; break;
+	case 9: skill = SkillType::SKILL_FROST_BOLT; break;
+	//next
+	case 10: skill = SkillType::SKILL_STAFF_DAMAGE_BONUS_PASSIVE_1; break;
+	case 11: skill = SkillType::SKILL_STAFF_DAMAGE_BONUS_AURA_1; break;
+	case 12: skill = SkillType::SKILL_STAFF_DAMAGE_BONUS_PASSIVE_2; break;
+	case 13: skill = SkillType::SKILL_STAFF_DAMAGE_BONUS_AURA_2; break;
+	case 14: skill = SkillType::SKILL_FIREBALL; break;
+	default:break;
+	}
+	numOfLearnedSkills = _self.getSkills().size();
+	if (numOfLearnedSkills > nextSkill)
+		nextSkill++;
+	_move.setSkillToLearn(skill);
+	// _move.getSkillTolearn()
+	// getAuraSkillRange()
+}
+
 void MyStrategy::setMessage()
 {
 }
 
 void MyStrategy::getMessage()
 {
+	//Message.getSkillsTolearn()
 }
 
 MyStrategy::MyStrategy() {
@@ -859,7 +890,7 @@ MyStrategy::MyStrategy() {
 	LOW_HP_FACTOR = 0.25;
 	WAYPOINT_RADIUS = 100.0;
 
-	int bonusCheckTicks = 0;
+	bonusCheckTicks = 0;
 
 	STRAFE_FACTOR = 3;
 	strafeTicks = 0;
@@ -870,11 +901,13 @@ MyStrategy::MyStrategy() {
 	d_f = d_e = d_w = d_b = d_m = d_wt = d_n = 6000;
 
 	isSkillsEnable = false;
+	numOfLearnedSkills = 0;
 	learnedSkills.resize(15);
 	for (auto &i : learnedSkills)
 	{
 		i = false;
 	}
+	nextSkill = 0;
 
 	double mapSize = 4000;
 

@@ -62,6 +62,8 @@ protected:
 	
 	bool isSkillsEnable;
 	std::vector<bool> learnedSkills;
+	int numOfLearnedSkills;
+	int nextSkill;
 
 	bool bonusChecked;
 	int bonusCheckTicks;
@@ -128,7 +130,7 @@ protected:
 	void attackEnemy(const model::Wizard& _self, const model::World& _world, const model::Game& _game, model::Move& _move, const model::LivingUnit& enemy);
 	void attackEnemyAdv(const model::Wizard& _self, const model::World& _world, const model::Game& _game, model::Move& _move, const model::LivingUnit& enemy);
 	void dodgeFrom(const model::Wizard& _self, const model::World& _world, const model::Game& _game, model::Move& _move, const model::LivingUnit& enemy);
-	void learnSkills(const model::Wizard& _self);
+	void learnSkills(const model::Wizard& _self, model::Move& _move);
 	
 
 	void setMessage();
