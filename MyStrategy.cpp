@@ -27,13 +27,20 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	initializeTick(_self, _world, _game, _move);
 	if (self.getDistanceTo(posBeforeBonus.getX(), posBeforeBonus.getY()) < 50 || fabs(self.getLife() - prevLife) > 50) returnToLastPos = false;
 	
+	bool isSkillsEnable = game.isSkillsEnabled();
+	if (isSkillsEnable)
+	{
+		learnSkills(_self);
+		if (_self.isMaster()) setMessage();
+		else getMessage();
+	}
 
 	// Постоянно двигаемся из-стороны в сторону, чтобы по нам было сложнее попасть.
 	// Считаете, что сможете придумать более эффективный алгоритм уклонения? Попробуйте! ;)
 	//_move.setStrafeSpeed( rand()%2 ? _game.getWizardStrafeSpeed() : -_game.getWizardStrafeSpeed());
 	
-	// амилитудно уворачиваемся от всего всегда 
-	//setStrafe(_move);
+	// амплитудно уворачиваемся от всего всегда 
+	
 	
 	//если видим бонус - бежим к нему и все
 	if (getBonus(_move)) return;	
@@ -216,44 +223,7 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 	//if (random == null) {
 	//	random = new Random(game.getRandomSeed());
 
-		double mapSize = _game.getMapSize();
-		
-		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_MIDDLE, vector<Point2D>{
-			Point2D(100.0, mapSize - 500), 
-				Point2D(100.0, mapSize - 600),
-				Point2D(800.0, mapSize - 800),
-				Point2D(900.0, mapSize - 1000),
-				Point2D(1800.0, mapSize - 1600),
-				Point2D(2000, 1900.0),
-				Point2D(2400, 1600.0),
-				Point2D(mapSize - 700.0, 700.0)
-		}));
-
-		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_TOP, vector<Point2D>{
-				Point2D(100.0, mapSize * 0.9),
-				Point2D(200.0, mapSize * 0.75),
-				Point2D(200.0, mapSize * 0.5),
-				Point2D(200.0, 700),				
-				//Point2D(800.0, 800.0),
-				//Point2D(600.0, 600.0),
-				Point2D(mapSize * 0.2, 200.0),
-				Point2D(mapSize * 0.5, 200.0),
-				Point2D(mapSize * 0.75, 200.0),
-				Point2D(mapSize - 700.0, 700.0)
-		}));
-
-		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_BOTTOM, vector<Point2D>{
-			 Point2D(100.0, mapSize - 100.0), // go down
-			 Point2D(600.0, mapSize - 200.0),
-			 Point2D(mapSize * 0.25, mapSize - 150.0),
-			 Point2D(mapSize * 0.5, mapSize - 200.0),
-			 Point2D(mapSize * 0.75, mapSize - 200.0),
-			 Point2D(3300.0, mapSize - 200.0),			 
-			 Point2D(mapSize - 200.0, 3300),
-			 Point2D(mapSize - 200.0, mapSize * 0.5),
-			 Point2D(mapSize - 200.0, mapSize * 0.25),
-			 Point2D(mapSize - 200.0, 200.0)
-		}));
+	
 
 		switch (static_cast<int>(_self.getId())) 
 		{
@@ -742,6 +712,26 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 	}	
 }
 
+void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World & _world, const model::Game & _game, model::Move & _move, const model::LivingUnit & enemy)
+{
+}
+
+void MyStrategy::learnSkills(const model::Wizard & _self)
+{
+}
+
+void MyStrategy::goToAdv(const Point2D & point, model::Move & _move)
+{
+}
+
+void MyStrategy::setMessage()
+{
+}
+
+void MyStrategy::getMessage()
+{
+}
+
 MyStrategy::MyStrategy() {
 
 	changeLaneTo = LaneType::_LANE_UNKNOWN_;
@@ -757,4 +747,43 @@ MyStrategy::MyStrategy() {
 	STRAFE_FACTOR = 3;
 	strafeTicks = 0;
 	lastStrafeDirection = 0;
+
+	double mapSize = 4000;
+
+	waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_MIDDLE, vector<Point2D>{
+		Point2D(100.0, mapSize - 500),
+			Point2D(100.0, mapSize - 600),
+			Point2D(800.0, mapSize - 800),
+			Point2D(900.0, mapSize - 1000),
+			Point2D(1800.0, mapSize - 1600),
+			Point2D(2000, 1900.0),
+			Point2D(2400, 1600.0),
+			Point2D(mapSize - 700.0, 700.0)
+	}));
+
+	waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_TOP, vector<Point2D>{
+		Point2D(100.0, mapSize * 0.9),
+			Point2D(200.0, mapSize * 0.75),
+			Point2D(200.0, mapSize * 0.5),
+			Point2D(200.0, 700),
+			//Point2D(800.0, 800.0),
+			//Point2D(600.0, 600.0),
+			Point2D(mapSize * 0.2, 200.0),
+			Point2D(mapSize * 0.5, 200.0),
+			Point2D(mapSize * 0.75, 200.0),
+			Point2D(mapSize - 700.0, 700.0)
+	}));
+
+	waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_BOTTOM, vector<Point2D>{
+		Point2D(100.0, mapSize - 100.0), // go down
+			Point2D(600.0, mapSize - 200.0),
+			Point2D(mapSize * 0.25, mapSize - 150.0),
+			Point2D(mapSize * 0.5, mapSize - 200.0),
+			Point2D(mapSize * 0.75, mapSize - 200.0),
+			Point2D(3300.0, mapSize - 200.0),
+			Point2D(mapSize - 200.0, 3300),
+			Point2D(mapSize - 200.0, mapSize * 0.5),
+			Point2D(mapSize - 200.0, mapSize * 0.25),
+			Point2D(mapSize - 200.0, 200.0)
+	}));
 }
