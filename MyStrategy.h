@@ -104,11 +104,13 @@ protected:
 	void goTo(const Point2D & point, model::Move& _move);
 	void goBackwardTo(const Point2D & point, model::Move& _move);
 	void goBackwardFrom(const Point2D & point, model::Move& _move);
-	void goTangentialFrom(const Point2D & point, model::Move& _move);
+	void goTangentialFrom(const Point2D & point, const Point2D & nextPoint, model::Move& _move);
 	int getCloseToBonus(model::Move& _move);
 	bool getBonus(model::Move& _move);
 	void getTargets();
+	model::Tree getClosestTree();
 	void setStrafe(model::Move& _move);
+	
 
 	void attackEnemy(const model::Wizard& _self, const model::World& _world, const model::Game& _game, model::Move& _move, const model::LivingUnit& enemy);
 
