@@ -401,7 +401,7 @@ int MyStrategy::getCloseToBonus(model::Move & _move)
 	if (x < 820 && y < 820 ) return 1;
 	if (x < 1600 && y < 400) return 11;
 	if ((x > mapSize - 820 && y > mapSize - 820)) return 3;
-	if ((x > mapSize - 400 && y > mapSize - 1600)) 31;
+	if ((x > mapSize - 400 && y > mapSize - 1600)) return 31;
 	if (abs(x - y) < 300 && (x < mapSize - y) && x > mapSize - y - 1000) return 21;
 	if (abs(x - y) < 300 && (x > mapSize - y) && x < mapSize - y + 1000) return 22;
 	if (x > 2000 && x < 3000 && fabs(x + y - mapSize)< 300) return 23;
@@ -902,11 +902,11 @@ MyStrategy::MyStrategy() {
 
 	isSkillsEnable = false;
 	numOfLearnedSkills = 0;
-	learnedSkills.resize(15);
-	for (auto &i : learnedSkills)
-	{
-		i = false;
-	}
+	//learnedSkills.resize(15);
+	//for (auto &i : learnedSkills)
+	//{
+	//	i = false;
+	//}
 	nextSkill = 0;
 
 	double mapSize = 4000;

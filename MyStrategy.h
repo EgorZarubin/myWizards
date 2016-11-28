@@ -61,7 +61,7 @@ protected:
 	double LOW_HP_FACTOR;
 	
 	bool isSkillsEnable;
-	std::vector<bool> learnedSkills;
+	//std::vector<bool> learnedSkills;
 	int numOfLearnedSkills;
 	int nextSkill;
 
