@@ -10,8 +10,9 @@
 using namespace model;
 using namespace std;
 
-
-// 
+//изучение скиллов
+//два вида атаки чуваков
+// две функции goTo
 // сделать  хорошие опорные точки (возможно подходить к ним ближе)
 // улучшить движение задним ходом
 // пробегать через деревья, средний бонус из двух вариантов
@@ -423,9 +424,9 @@ int MyStrategy::getCloseToBonus(model::Move & _move)
 
 	// разделяем зоны на близость к бонусам
 	if (x < 820 && y < 820 ) return 1;
-	if (x < 1600 && y < 200) return 11;
+	if (x < 1600 && y < 400) return 11;
 	if ((x > mapSize - 820 && y > mapSize - 820)) return 3;
-	if ((x > mapSize - 200 && y > mapSize - 1600)) 31;
+	if ((x > mapSize - 400 && y > mapSize - 1600)) 31;
 	if (abs(x - y) < 300 && (x < mapSize - y) && x > mapSize - y - 1000) return 21;
 	if (abs(x - y) < 300 && (x > mapSize - y) && x < mapSize - y + 1000) return 22;
 	if (x > 2000 && x < 3000 && fabs(x + y - mapSize)< 300) return 23;
@@ -488,8 +489,18 @@ bool MyStrategy::getBonus(model::Move & _move)
 							setStrafe(_move);
 							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 70)
 								_move.setAction(ActionType::ACTION_STAFF);
-							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE > 10])
+							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
+							{
+								_move.setAction(ActionType::ACTION_FROST_BOLT);
+								_move.setCastAngle(self.getAngleTo(*enemy));
+								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getFrostBoltRadius());
+							}
+							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
+							{
 								_move.setAction(ActionType::ACTION_FIREBALL);
+								_move.setCastAngle(self.getAngleTo(*enemy));
+								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getFireballRadius());
+							}
 							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
 							{
 								_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
@@ -531,8 +542,18 @@ bool MyStrategy::getBonus(model::Move & _move)
 							setStrafe(_move);
 							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 70)
 								_move.setAction(ActionType::ACTION_STAFF);
-							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE > 10])
+							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
+							{
+								_move.setAction(ActionType::ACTION_FROST_BOLT);
+								_move.setCastAngle(self.getAngleTo(*enemy));
+								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getFrostBoltRadius());
+							}
+							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
+							{
 								_move.setAction(ActionType::ACTION_FIREBALL);
+								_move.setCastAngle(self.getAngleTo(*enemy));
+								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getFireballRadius());
+							}
 							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
 							{
 								_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
@@ -589,7 +610,7 @@ void MyStrategy::getTargets()
 	// упорядочиваем цели по здоровью
 	std::sort(targets.begin(), targets.end(),
 		[](LivingUnit* u1, LivingUnit* u2) {
-		return (u1->getLife() / u1->getMaxLife() < u2->getLife() / u1->getMaxLife());
+		return ( u1->getMaxLife() / u1->getLife() < u1->getMaxLife() / u2->getLife());
 	});
 
 	auto it = targets.begin();
@@ -683,6 +704,7 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 			
 	if (_self.getRemainingActionCooldownTicks() == 0)
 	{
+		int i = self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT];
 		// Если цель перед нами, ...
 		if (fabs(angle) < _game.getStaffSector() / 2.0)
 		{
@@ -691,9 +713,19 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 				_move.setAction(ActionType::ACTION_STAFF);
 				return;
 			}
-
-			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE > 10])
+			else if ( (enemy.getMaxLife()/(enemy.getLife()) ) > 4 && /*enemy.getRadius() == 35 &&*/
+				self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
+			{
+				_move.setAction(ActionType::ACTION_FROST_BOLT);
+				_move.setCastAngle(self.getAngleTo(enemy));
+				_move.setMinCastDistance(distance - (enemy).getRadius() + game.getFrostBoltRadius());
+			}	
+			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
+			{
 				_move.setAction(ActionType::ACTION_FIREBALL);
+				_move.setCastAngle(angle);
+				_move.setMinCastDistance(distance - enemy.getRadius() + _game.getFireballRadius());
+			}
 			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
 			{
 				_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
