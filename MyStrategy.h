@@ -64,6 +64,7 @@ protected:
 	bool bonusChecked;
 	int bonusCheckTicks;
 	int lastBonusCheck;
+	int prevLife;
 	model::LaneType changeLaneTo;
 
 	int STRAFE_FACTOR;
@@ -90,6 +91,7 @@ protected:
 	model::LivingUnit * closestWizard;
 	model::LivingUnit * closestBuilding;
 	model::LivingUnit * closestMinion;
+	model::LivingUnit * closestNeutral;
 	model::LivingUnit * weakestEnemy;
 
 	Point2D myLastPos;

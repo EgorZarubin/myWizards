@@ -19,9 +19,12 @@ using namespace std;
 void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _game, Move& _move) {
   	
 	myLastPos = Point2D(self.getX(), self.getY());
-	if (self.getDistanceTo(posBeforeBonus.getX(), posBeforeBonus.getY()) < 50) returnToLastPos = false;
+	prevLife = self.getLife();
+
 	initializeStrategy(_self, _game);
 	initializeTick(_self, _world, _game, _move);
+	if (self.getDistanceTo(posBeforeBonus.getX(), posBeforeBonus.getY()) < 50 || fabs(self.getLife() - prevLife) > 50) returnToLastPos = false;
+	
 
 	// ѕосто€нно двигаемс€ из-стороны в сторону, чтобы по нам было сложнее попасть.
 	// —читаете, что сможете придумать более эффективный алгоритм уклонени€? ѕопробуйте! ;)
@@ -35,14 +38,15 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	
 	//распредел€ем цели по типам: слабые, ближние, волшебники, миньоны
 	getTargets();
-	double d_f, d_e, d_w, d_b, d_m, d_wt;
-	d_f = d_e = d_w = d_b = d_m = d_wt = 6000;
+	double d_f, d_e, d_w, d_b, d_m, d_wt, d_n;
+	d_f = d_e = d_w = d_b = d_m = d_wt = d_n = 6000;
 	if (closestFriend != nullptr) d_f = _self.getDistanceTo(*closestFriend);
 	if (closestEnemy != nullptr) d_e = _self.getDistanceTo(*closestEnemy);
 	if (closestBuilding != nullptr) d_b = _self.getDistanceTo(*closestBuilding);
 	if (closestWizard != nullptr) d_w = _self.getDistanceTo(*closestWizard);
 	if (closestMinion != nullptr) d_m = _self.getDistanceTo(*closestMinion);
 	if (weakestEnemy != nullptr) d_wt = _self.getDistanceTo(*weakestEnemy);
+	if (closestNeutral != nullptr) d_n = _self.getDistanceTo(*closestNeutral);
 
 	//если врем€ близко к бонусу, надо его вз€ть
 	int closeToBonus = getCloseToBonus(_move);
@@ -155,15 +159,25 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 			
 	
 	if (d_f <= self.getRadius() + closestFriend->getRadius() + 20) //застр€ли изза друга - обойдем его
-		goTangentialFrom(Point2D(closestFriend->getX(), closestFriend->getY()), getNextWaypoint(),_move);
-
+	{
+		Point2D point = returnToLastPos ? posBeforeBonus : getNextWaypoint();
+		if (fabs(self.getAngleTo(*closestFriend) - self.getAngleTo(point.getX(), point.getY()) < PI / 2))
+			goTangentialFrom(Point2D(closestFriend->getX(), closestFriend->getY()), point, _move);
+		else
+			goTo(point, _move);
+	}
 	else if (_self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1) // застр€ли хрен пойми почему
 	{
 		Tree tree = getClosestTree();
-		if (self.getDistanceTo(tree) < self.getRadius() + tree.getRadius())
+		if (self.getDistanceTo(tree) < self.getRadius() + tree.getRadius() + 10 )
 		{
 			goTo(Point2D(tree.getX(), tree.getY()), _move);
 			_move.setAction(ActionType::ACTION_STAFF);
+		}
+		else if (d_n < 6000 && d_n < self.getRadius() + closestNeutral->getRadius() + 5)
+		{
+			Point2D point = returnToLastPos ? posBeforeBonus : getNextWaypoint();
+			goTangentialFrom(Point2D(closestFriend->getX(), closestFriend->getY()), point, _move);
 		}
 		else
 			_move.setSpeed(rand() % 2 ? -game.getWizardForwardSpeed() : game.getWizardForwardSpeed()); // не работает, переделать, учесть деревь€
@@ -181,8 +195,7 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	else if (d_f > 400 && d_f < 6000 && closestFriend->getRadius() < 100)// бежим к друзь€м, если они далеко b и это не база // надо бы избегать деревьев
 		goTo(Point2D(closestFriend->getX(), closestFriend->getY()), _move);
 	
-	else // ≈сли нет других действий, просто продвигаемс€ вперЄд.
-		
+	else // ≈сли нет других действий, просто продвигаемс€ вперЄд.		
 		goTo(getNextWaypoint(), _move);	
 	return;
 }
@@ -407,7 +420,7 @@ int MyStrategy::getCloseToBonus(model::Move & _move)
 	if ((x > mapSize - 200 && y > mapSize - 1600)) 31;
 	if (abs(x - y) < 300 && (x < mapSize - y) && x > mapSize - y - 1000) return 21;
 	if (abs(x - y) < 300 && (x > mapSize - y) && x < mapSize - y + 1000) return 22;
-	if (x > 2000 && x < 3000 && fabs(x + y - mapSize< 300)) return 23;
+	if (x > 2000 && x < 3000 && fabs(x + y - mapSize)< 300) return 23;
 	
     //	держимс€ ближе к бонусу	 
 	return 0;
@@ -541,6 +554,7 @@ void MyStrategy::getTargets()
 	closestWizard = nullptr;
 	closestMinion = nullptr;
 	weakestEnemy = nullptr;
+	closestNeutral = nullptr;
 
 	std::vector<LivingUnit *> targets;
 	for (unsigned int i = 0; i < world.getBuildings().size(); i++)
@@ -562,6 +576,7 @@ void MyStrategy::getTargets()
 	double minDist_w = 6000;
 	double minDist_m = 6000;
 	double minDist_f = 6000;
+	double minDist_n = 6000;
 
 	// упор€дочиваем цели по здоровью
 	std::sort(targets.begin(), targets.end(),
@@ -608,6 +623,14 @@ void MyStrategy::getTargets()
 			{
 				minDist_f = u->getDistanceTo(self);
 				closestFriend = u;
+			}
+		}
+		else if(u->getFaction() == Faction::FACTION_NEUTRAL)
+		{
+			if (u->getDistanceTo(self) < minDist_n)
+			{
+				minDist_n = u->getDistanceTo(self);
+				closestNeutral = u;
 			}
 		}
 	}
