@@ -59,7 +59,9 @@ protected:
 	// critical values
 	double WAYPOINT_RADIUS;
 	double LOW_HP_FACTOR;
-	double cooldown;
+	
+	bool isSkillsEnable;
+	std::vector<bool> learnedSkills;
 
 	bool bonusChecked;
 	int bonusCheckTicks;
@@ -70,6 +72,8 @@ protected:
 	int STRAFE_FACTOR;
 	int strafeTicks;
 	int lastStrafeDirection;
+
+	int lastDodgeDir;
 
 	std::map<model::LaneType, std::vector<Point2D>> waypointsByLane;
 
@@ -93,20 +97,27 @@ protected:
 	model::LivingUnit * closestMinion;
 	model::LivingUnit * closestNeutral;
 	model::LivingUnit * weakestEnemy;
+	double d_f, d_e, d_w, d_b, d_m, d_wt, d_n;
 
 	Point2D myLastPos;
 	Point2D posBeforeBonus;
 	bool returnToLastPos;
 
+	void clearValues();
 
 	void initializeStrategy(const model::Wizard& _self, const model::Game& _game);
 	void initializeTick(const model::Wizard& _self, const model::World& _world, const model::Game& _game, const model::Move& _move);
 	Point2D getNextWaypoint();
 	Point2D getPreviousWaypoint();
+	
 	void goTo(const Point2D & point, model::Move& _move);
+	void goToAdv(const Point2D & point, model::Move& _move);
 	void goBackwardTo(const Point2D & point, model::Move& _move);
+	void goBackwardToAdv(const Point2D & point, model::Move& _move);
 	void goBackwardFrom(const Point2D & point, model::Move& _move);
 	void goTangentialFrom(const Point2D & point, const Point2D & nextPoint, model::Move& _move);
+	
+	
 	int getCloseToBonus(model::Move& _move);
 	bool getBonus(model::Move& _move);
 	void getTargets();
@@ -118,7 +129,7 @@ protected:
 	void attackEnemyAdv(const model::Wizard& _self, const model::World& _world, const model::Game& _game, model::Move& _move, const model::LivingUnit& enemy);
 	void dodgeFrom(const model::Wizard& _self, const model::World& _world, const model::Game& _game, model::Move& _move, const model::LivingUnit& enemy);
 	void learnSkills(const model::Wizard& _self);
-	void goToAdv(const Point2D & point, model::Move& _move);
+	
 
 	void setMessage();
 	void getMessage();
