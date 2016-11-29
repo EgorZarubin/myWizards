@@ -586,7 +586,7 @@ void MyStrategy::getTargets()
 	// упорядочиваем цели по здоровью
 	std::sort(targets.begin(), targets.end(),
 		[](LivingUnit* u1, LivingUnit* u2) {
-		return ( u1->getMaxLife() / u1->getLife() < u1->getMaxLife() / u2->getLife());
+		return ( double(u1->getLife())/double(u1->getMaxLife())  <   double(u2->getLife()) / double(u2->getMaxLife()));
 	});
 
 	auto it = targets.begin();
@@ -713,7 +713,7 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 			}
 			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 15)
 				_move.setTurn(angle); 
-			else dodgeFrom(_self, _world, _game, _move, enemy);
+			else if (distance > 80) dodgeFrom(_self, _world, _game, _move, enemy);
 		}
 		else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 15)
 			_move.setTurn(angle);
@@ -721,7 +721,7 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 	}
 	else if (distance < self.getCastRange() - 100)
 	{
-		goBackwardToAdv(getPreviousWaypoint(), _move);
+		goBackwardTo(getPreviousWaypoint(), _move); //ADV?
 	}	
 	else dodgeFrom(_self, _world, _game, _move, enemy);
 }
@@ -772,7 +772,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 			}
 			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 15)
 				_move.setTurn(angle);
-			else dodgeFrom(_self, _world, _game, _move, enemy);
+			else if (distance > 80) dodgeFrom(_self, _world, _game, _move, enemy);
 		}
 		else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 15)
 			_move.setTurn(angle);
@@ -782,7 +782,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 	//	goBackwardFrom(Point2D(enemy.getX(), enemy.getY()), _move);
 	else if (distance < self.getCastRange() - 100)
 	{
-		goBackwardTo(getPreviousWaypoint(), _move);
+		goBackwardTo(getPreviousWaypoint(), _move); //Adv?
 	}
 	else dodgeFrom(_self, _world, _game, _move, enemy);
 }
@@ -913,7 +913,7 @@ MyStrategy::MyStrategy() {
 	double mapSize = 4000;
 
 	waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_MIDDLE, vector<Point2D>{
-		Point2D(100.0, mapSize - 500),
+		Point2D(100.0, mapSize - 300),
 			Point2D(100.0, mapSize - 600),
 			Point2D(800.0, mapSize - 800),
 			Point2D(900.0, mapSize - 1000),
