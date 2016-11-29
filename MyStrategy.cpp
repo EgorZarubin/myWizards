@@ -35,10 +35,10 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	// определяем тип игры
 	isSkillsEnable = game.isSkillsEnabled();	
 	if (isSkillsEnable)
-	{
-		learnSkills(_self, _move);
-		if (_self.isMaster()) setMessage();
+	{		
+		if (_self.isMaster()) setMessage(_move);
 		else getMessage();
+		learnSkills(_self, _move);
 	}
 	
 	//если видим бонус - бежим к нему и все
@@ -738,14 +738,15 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 		// Если цель перед нами, ...
 		if (fabs(angle) < _game.getStaffSector() / 2.0)
 		{
+			double life = double(enemy.getLife()) / double(enemy.getMaxLife());
 			if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance <= 80)
 			{
 				goToAdv(Point2D(enemy.getX(), enemy.getY()), _move);
 				_move.setAction(ActionType::ACTION_STAFF);
 				return;
 			}
-			else if (numOfLearnedSkills > 9 && (enemy.getMaxLife() / (enemy.getLife())) > 4 && /*enemy.getRadius() == 35 &&*/
-				self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
+			else if ((numOfLearnedSkills > 9) && (enemy.getLife() > 0.50) && enemy.getRadius() <= 35 &&
+				(self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0))
 			{
 				_move.setTurn(angle);
 				_move.setAction(ActionType::ACTION_FROST_BOLT);
@@ -753,8 +754,8 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 				_move.setMinCastDistance(distance - (enemy).getRadius() + game.getFrostBoltRadius());
 				lastDodgeDir *= -1;
 			}
-			else if (numOfLearnedSkills > 14 && _self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10 &&
-				self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FIREBALL] == 0)
+			else if ((numOfLearnedSkills > 14) && (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10) &&
+				(self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FIREBALL] == 0))
 			{
 				_move.setTurn(angle);
 				_move.setAction(ActionType::ACTION_FIREBALL);
@@ -790,6 +791,12 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 void MyStrategy::dodgeFrom(const model::Wizard & _self, const model::World & _world, const model::Game & _game, model::Move & _move, const model::LivingUnit & enemy)
 {
 	if (self.getLife() == self.getMaxLife()) return;
+	if (true)
+	{		
+		_move.setStrafeSpeed(lastDodgeDir * game.getWizardStrafeSpeed());		
+		//setStrafe(_move);
+		return;
+	}
 	Point2D point = Point2D(enemy.getX(), enemy.getY());
 
 	double angle1 = self.getAngleTo(self.getX() - (point.getY() - self.getY()), self.getY() + (point.getX() - self.getX()));
@@ -810,7 +817,7 @@ void MyStrategy::goToAdv(const Point2D & point, model::Move & _move)
 	if (self.getDistanceTo(point.getX(), point.getY()) < 10) return;
 
 
-	if (self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1 && d_f <= self.getRadius() + closestFriend->getRadius() + 10) //застряли изза друга - обойдем его
+	if ((self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1) && (d_f <= self.getRadius() + closestFriend->getRadius() + 10)) //застряли изза друга - обойдем его
 	{
 		double  dA = fabs(self.getAngleTo(*closestFriend) - self.getAngleTo(point.getX(), point.getY()));
 		if (dA< PI / 2)
@@ -826,7 +833,7 @@ void MyStrategy::goToAdv(const Point2D & point, model::Move & _move)
 			goTo(Point2D(tree.getX(), tree.getY()), _move);
 			_move.setAction(ActionType::ACTION_STAFF);
 		}
-		else if (d_n < 6000 && d_n < self.getRadius() + closestNeutral->getRadius() + 5)
+		else if ((d_n < 6000) && (d_n < self.getRadius() + closestNeutral->getRadius() + 5))
 		{			
 			goTangentialFrom(Point2D(closestNeutral->getX(), closestNeutral->getY()), point, _move);
 			setStrafe(_move);
@@ -841,6 +848,12 @@ void MyStrategy::goToAdv(const Point2D & point, model::Move & _move)
 
 void MyStrategy::learnSkills(const model::Wizard & _self, model::Move& _move)
 {
+	if (skillToLearn != SkillType::_SKILL_UNKNOWN_) // указание свыше
+	{
+		_move.setSkillToLearn(skillToLearn);
+		return;
+	}
+
 	SkillType skill = SkillType::_SKILL_UNKNOWN_;
 	switch (nextSkill)
 	{
@@ -872,13 +885,30 @@ void MyStrategy::learnSkills(const model::Wizard & _self, model::Move& _move)
 	// getAuraSkillRange()
 }
 
-void MyStrategy::setMessage()
+void MyStrategy::setMessage(model::Move& _move)
 {
+	std::vector<Message> messages;
+	messages.push_back(Message(LaneType::LANE_TOP, SkillType::_SKILL_UNKNOWN_, std::vector<signed char>(0)));
+	messages.push_back(Message(LaneType::LANE_MIDDLE, SkillType::_SKILL_UNKNOWN_, std::vector<signed char>(0)));
+	messages.push_back(Message(LaneType::LANE_MIDDLE, SkillType::_SKILL_UNKNOWN_, std::vector<signed char>(0)));
+	messages.push_back(Message(LaneType::LANE_BOTTOM, SkillType::_SKILL_UNKNOWN_, std::vector<signed char>(0)));
 }
 
 void MyStrategy::getMessage()
 {
-	//Message.getSkillsTolearn()
+	std::vector<Message> messages = self.getMessages();
+	skillToLearn = SkillType::_SKILL_UNKNOWN_;
+	if (messages.size())
+	{
+		Message lastmessage = messages.back();
+
+		// скилы слишком захардкожены
+		//if ( (self.getSkills().size() == 0) ||  (lastmessage.getSkillToLearn() != self.getSkills().back()))
+		//	skillToLearn = lastmessage.getSkillToLearn();
+
+		if (lastmessage.getLane() != LaneType::_LANE_UNKNOWN_)
+			changeLaneTo = lastmessage.getLane();		
+	}
 }
 
 MyStrategy::MyStrategy() {
@@ -893,7 +923,7 @@ MyStrategy::MyStrategy() {
 
 	bonusCheckTicks = 0;
 
-	STRAFE_FACTOR = 3;
+	STRAFE_FACTOR = 10;
 	strafeTicks = 0;
 	lastStrafeDirection = 0;
 
@@ -909,6 +939,7 @@ MyStrategy::MyStrategy() {
 	//	i = false;
 	//}
 	nextSkill = 0;
+	skillToLearn = SkillType::_SKILL_UNKNOWN_;
 
 	double mapSize = 4000;
 

@@ -65,6 +65,9 @@ protected:
 	int numOfLearnedSkills;
 	int nextSkill;
 
+
+	model::SkillType skillToLearn;
+
 	bool bonusChecked;
 	int bonusCheckTicks;
 	int lastBonusCheck;
@@ -133,7 +136,7 @@ protected:
 	void learnSkills(const model::Wizard& _self, model::Move& _move);
 	
 
-	void setMessage();
+	void setMessage(model::Move& _move);
 	void getMessage();
 
 public:
