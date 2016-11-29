@@ -20,39 +20,36 @@ using namespace std;
 
 void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _game, Move& _move) {
   	
-	if (_world.getTickIndex() < 300) return;
+	if (_world.getTickIndex() < 300) return; //стратуем чуть чуть позже, чтобы сразу не помереть
+	clearValues();
+
+	
 	myLastPos = Point2D(self.getX(), self.getY());
 	prevLife = self.getLife();
 
 	initializeStrategy(_self, _game);
 	initializeTick(_self, _world, _game, _move);
+	
 	if (self.getDistanceTo(posBeforeBonus.getX(), posBeforeBonus.getY()) < 50 || fabs(self.getLife() - prevLife) > 50) returnToLastPos = false;
 	
-
-	// ѕосто€нно двигаемс€ из-стороны в сторону, чтобы по нам было сложнее попасть.
-	// —читаете, что сможете придумать более эффективный алгоритм уклонени€? ѕопробуйте! ;)
-	//_move.setStrafeSpeed( rand()%2 ? _game.getWizardStrafeSpeed() : -_game.getWizardStrafeSpeed());
-	
-	// амилитудно уворачиваемс€ от всего всегда 
-	//setStrafe(_move);
+	// определ€ем тип игры
+	isSkillsEnable = game.isSkillsEnabled();	
+	if (isSkillsEnable)
+	{
+		learnSkills(_self, _move);
+		if (_self.isMaster()) setMessage();
+		else getMessage();
+	}
 	
 	//если видим бонус - бежим к нему и все
 	if (getBonus(_move)) return;	
 	
 	//распредел€ем цели по типам: слабые, ближние, волшебники, миньоны
-	getTargets();
-	double d_f, d_e, d_w, d_b, d_m, d_wt, d_n;
-	d_f = d_e = d_w = d_b = d_m = d_wt = d_n = 6000;
-	if (closestFriend != nullptr) d_f = _self.getDistanceTo(*closestFriend);
-	if (closestEnemy != nullptr) d_e = _self.getDistanceTo(*closestEnemy);
-	if (closestBuilding != nullptr) d_b = _self.getDistanceTo(*closestBuilding);
-	if (closestWizard != nullptr) d_w = _self.getDistanceTo(*closestWizard);
-	if (closestMinion != nullptr) d_m = _self.getDistanceTo(*closestMinion);
-	if (weakestEnemy != nullptr) d_wt = _self.getDistanceTo(*weakestEnemy);
-	if (closestNeutral != nullptr) d_n = _self.getDistanceTo(*closestNeutral);
-
+	getTargets();	
+	
 	//если врем€ близко к бонусу, надо его вз€ть
-	int closeToBonus = getCloseToBonus(_move);
+	int closeToBonus = getCloseToBonus(_move);  // определ€ем близость к бонусу и сектор
+	
 	switch (closeToBonus)
 	{
 		// если мы в определенных квадратах - идем в точку, где виден бонус
@@ -61,63 +58,63 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	case 1:
 		if (d_wt < _self.getCastRange())
 		{
-			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+			//attackEnemy(_self, _world, _game, _move, *weakestEnemy);
 			if (self.getDistanceTo(1200, 1200) > self.getVisionRange() - 10)
-				goBackwardTo(Point2D(800, 800), _move);
+				goToAdv(Point2D(800, 800), _move);//Backward
 		}
 		else
-			goTo(Point2D(800, 800), _move);
+			goToAdv(Point2D(800, 800), _move);
 		return;
 	case 11:
 		if (d_wt < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
 		else
-			goBackwardTo(Point2D(750, 300), _move);
+			goBackwardToAdv(Point2D(750, 300), _move);
 		return;
 	case 21:	
 		if (d_wt < _self.getCastRange())
 		{
-			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+			//attackEnemy(_self, _world, _game, _move, *weakestEnemy);
 			if (self.getDistanceTo(1200, 1200) > self.getVisionRange() - 10)
-				goBackwardTo(Point2D(1400, 1750), _move);
+				goToAdv(Point2D(1400, 1750), _move); //Backward
 		}
-		else goTo(Point2D(1600, 1600), _move);
+		else goToAdv(Point2D(1600, 1600), _move);
 		return;
 	case 22:
 		if (d_wt < _self.getCastRange())
 		{
-			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+			//attackEnemy(_self, _world, _game, _move, *weakestEnemy);
 			if (self.getDistanceTo(2800, 2800) > self.getVisionRange() - 10)
-				goBackwardTo(Point2D(2400, 2400), _move);
+				goToAdv(Point2D(2400, 2400), _move);//Backward
 		}
-		else goTo(Point2D(2400, 2400), _move);
+		else goToAdv(Point2D(2400, 2400), _move);
 		return;
 	case 23:
 		if (d_wt < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
-		goBackwardTo(Point2D(2000, 2000), _move); return;
+		goBackwardToAdv(Point2D(2000, 2000), _move); return;
 	case 3:
 		if (d_wt < _self.getCastRange())
 		{
-			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+			//attackEnemy(_self, _world, _game, _move, *weakestEnemy);
 			if (self.getDistanceTo(2800, 2800) > self.getVisionRange() - 10)
-				goBackwardTo(Point2D(3200, 3200), _move);
+				goToAdv(Point2D(3200, 3200), _move);//Backward
 		}
-		else goTo(Point2D(3200, 3200), _move);
+		else goToAdv(Point2D(3200, 3200), _move);
 		return;
 	case 31:
 		if (d_wt < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
-		goBackwardTo(Point2D(3700, 750), _move); return;
+		goToAdv(Point2D(3700, 750), _move); return; // Backward
 	case 41:
 		if (d_w < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 			attackEnemy(_self, _world, _game, _move, *closestWizard);
-		goTo(Point2D(1150, 1250), _move);
+		goToAdv(Point2D(1150, 1250), _move);
 		return;
 	case 42:
 		if (d_w < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 			attackEnemy(_self, _world, _game, _move, *closestWizard);
-		goTo(Point2D(2750, 2850), _move);
+		goToAdv(Point2D(2750, 2850), _move);
 		return;
 	default: break;
 	}
@@ -159,52 +156,29 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		attackEnemy(_self, _world, _game, _move, enemy);		
 		return;
 	}
-			
-	
-	if (_self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1 && d_f <= self.getRadius() + closestFriend->getRadius() + 20) //застр€ли изза друга - обойдем его
-	{
-		Point2D point = returnToLastPos ? posBeforeBonus : getNextWaypoint();
-		double  dA = fabs(self.getAngleTo(*closestFriend) - self.getAngleTo(point.getX(), point.getY()));
-		if (fabs(self.getAngleTo(*closestFriend) - self.getAngleTo(point.getX(), point.getY())) < PI / 2)
-			goTangentialFrom(Point2D(closestFriend->getX(), closestFriend->getY()), point, _move);
-		else
-			goTo(point, _move);
-	}
-	else if (_self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1) // застр€ли хрен пойми почему
-	{
-		Tree tree = getClosestTree();
-		if (self.getDistanceTo(tree) < self.getRadius() + tree.getRadius() + 10 )
-		{
-			goTo(Point2D(tree.getX(), tree.getY()), _move);
-			_move.setAction(ActionType::ACTION_STAFF);
-		}
-		else if (d_n < 6000 && d_n < self.getRadius() + closestNeutral->getRadius() + 5)
-		{
-			Point2D point = returnToLastPos ? posBeforeBonus : getNextWaypoint();
-			goTangentialFrom(Point2D(closestNeutral->getX(), closestNeutral->getY()), point, _move);
-			setStrafe(_move);
-		}
-		else
-			_move.setSpeed(rand() % 2 ? -game.getWizardForwardSpeed() : game.getWizardForwardSpeed()); // не работает, переделать, учесть деревь€
-	}
 
 	else if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR) // ≈сли осталось мало жизненной энергии, отступаем задом к предыдущей ключевой точке на линии.
-		goBackwardTo(getPreviousWaypoint(), _move);
+		goBackwardToAdv(getPreviousWaypoint(), _move);
 
 	else if (d_e < 600)                                            // враг близко - идем к нему
-		goTo(Point2D(closestEnemy->getX(), closestEnemy->getY()), _move);
+		goToAdv(Point2D(closestEnemy->getX(), closestEnemy->getY()), _move);
 
 	else if (returnToLastPos)
-		goTo(posBeforeBonus, _move);
+		goToAdv(posBeforeBonus, _move);
 
 	else if (d_f > 400 && d_f < 6000 && closestFriend->getRadius() < 100)// бежим к друзь€м, если они далеко b и это не база // надо бы избегать деревьев
-		goTo(Point2D(closestFriend->getX(), closestFriend->getY()), _move);
+		goToAdv(Point2D(closestFriend->getX(), closestFriend->getY()), _move);
 	
 	else // ≈сли нет других действий, просто продвигаемс€ вперЄд.		
-		goTo(getNextWaypoint(), _move);	
+		goToAdv(getNextWaypoint(), _move);	
 	return;
 }
 
+
+void MyStrategy::clearValues()
+{
+	d_f = d_e = d_w = d_b = d_m = d_wt = d_n = 6000;
+}
 
 /**
 * »нциализируем стратегию.
@@ -217,44 +191,7 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 	//if (random == null) {
 	//	random = new Random(game.getRandomSeed());
 
-		double mapSize = _game.getMapSize();
-		
-		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_MIDDLE, vector<Point2D>{
-			Point2D(100.0, mapSize - 500), 
-				Point2D(100.0, mapSize - 600),
-				Point2D(800.0, mapSize - 800),
-				Point2D(900.0, mapSize - 1000),
-				Point2D(1800.0, mapSize - 1600),
-				Point2D(2000, 1900.0),
-				Point2D(2400, 1600.0),
-				Point2D(mapSize - 700.0, 700.0)
-		}));
-
-		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_TOP, vector<Point2D>{
-				Point2D(100.0, mapSize * 0.9),
-				Point2D(200.0, mapSize * 0.75),
-				Point2D(200.0, mapSize * 0.5),
-				Point2D(200.0, 700),				
-				//Point2D(800.0, 800.0),
-				//Point2D(600.0, 600.0),
-				Point2D(mapSize * 0.2, 200.0),
-				Point2D(mapSize * 0.5, 200.0),
-				Point2D(mapSize * 0.75, 200.0),
-				Point2D(mapSize - 700.0, 700.0)
-		}));
-
-		waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_BOTTOM, vector<Point2D>{
-			 Point2D(100.0, mapSize - 100.0), // go down
-			 Point2D(600.0, mapSize - 200.0),
-			 Point2D(mapSize * 0.25, mapSize - 150.0),
-			 Point2D(mapSize * 0.5, mapSize - 200.0),
-			 Point2D(mapSize * 0.75, mapSize - 200.0),
-			 Point2D(3300.0, mapSize - 200.0),			 
-			 Point2D(mapSize - 200.0, 3300),
-			 Point2D(mapSize - 200.0, mapSize * 0.5),
-			 Point2D(mapSize - 200.0, mapSize * 0.25),
-			 Point2D(mapSize - 200.0, 200.0)
-		}));
+	
 
 		switch (static_cast<int>(_self.getId())) 
 		{
@@ -372,6 +309,44 @@ void MyStrategy::goBackwardTo(const Point2D & point, Move& _move)
 
 }
 
+void MyStrategy::goBackwardToAdv(const Point2D & point, Move& _move)
+{
+	if (self.getDistanceTo(point.getX(), point.getY()) < 10) return;
+
+
+	if (self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1 && d_f <= self.getRadius() + closestFriend->getRadius() + 10) //застр€ли изза друга - обойдем его
+	{
+		double  dA = fabs(self.getAngleTo(*closestFriend) - self.getAngleTo(point.getX(), point.getY()));
+		if (dA< PI / 2)
+			goTangentialFrom(Point2D(closestFriend->getX(), closestFriend->getY()), point, _move);
+		else
+			goTo(point, _move);
+	}
+	else if (self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1) // застр€ли хрен пойми почему
+	{
+		Tree tree = getClosestTree();
+		if (self.getDistanceTo(tree) < self.getRadius() + tree.getRadius() + 10)
+		{
+			goTo(Point2D(tree.getX(), tree.getY()), _move);
+			_move.setAction(ActionType::ACTION_STAFF);
+		}
+		else if (d_n < 6000 && d_n < self.getRadius() + closestNeutral->getRadius() + 5)
+		{
+			goTangentialFrom(Point2D(closestNeutral->getX(), closestNeutral->getY()), point, _move);
+			setStrafe(_move);
+		}
+		else
+			_move.setSpeed(rand() % 2 ? -game.getWizardForwardSpeed() : game.getWizardForwardSpeed()); // не работает, переделать, учесть деревь€
+	}
+	else
+	{
+		double angle = self.getAngleTo(2 * self.getX() - point.getX(), 2 * self.getY() - point.getY());
+		_move.setTurn(angle);
+		if (fabs(angle) < game.getWizardMaxTurnAngle())
+			_move.setSpeed(-game.getWizardForwardSpeed());
+	}
+}
+
 void MyStrategy::goBackwardFrom (const Point2D & point, Move& _move)
 {
 	double angle = self.getAngleTo(point.getX(), point.getY());
@@ -404,7 +379,7 @@ void MyStrategy::goTangentialFrom(const Point2D & point, const Point2D & nextPoi
 
 int MyStrategy::getCloseToBonus(model::Move & _move)
 { 
-	if (world.getTickIndex() - lastBonusCheck < game.getBonusAppearanceIntervalTicks() - 400 ) return 0;
+	if (world.getTickIndex() - lastBonusCheck < game.getBonusAppearanceIntervalTicks() - 350 ) return 0;
 
 	//bonusCheckTicks++;
 	//if (bonusCheckTicks > 500) // если бонус провер€ли давно, то он не проверен
@@ -427,7 +402,7 @@ int MyStrategy::getCloseToBonus(model::Move & _move)
 	if (x < 820 && y < 820 ) return 1;
 	if (x < 1600 && y < 400) return 11;
 	if ((x > mapSize - 820 && y > mapSize - 820)) return 3;
-	if ((x > mapSize - 400 && y > mapSize - 1600)) 31;
+	if ((x > mapSize - 400 && y > mapSize - 1600)) return 31;
 	if (abs(x - y) < 300 && (x < mapSize - y) && x > mapSize - y - 1000) return 21;
 	if (abs(x - y) < 300 && (x > mapSize - y) && x < mapSize - y + 1000) return 22;
 	if (x > 2000 && x < 3000 && fabs(x + y - mapSize)< 300) return 23;
@@ -474,13 +449,13 @@ bool MyStrategy::getBonus(model::Move & _move)
 
 						if ((c_dist < 80) && (fabs(fabs(self.getAngleTo(mapSize*0.3, mapSize*0.3) - PI) < game.getStaffSector()))) //если враг близко и бонус с другой стороны
 						{
-							goBackwardTo(Point2D(mapSize*0.3, mapSize*0.3), _move);
+							goBackwardToAdv(Point2D(mapSize*0.3, mapSize*0.3), _move);
 							enemy = closestEnemy;
 							e_d = c_dist;
 						}
 						else
 						{
-							goTo(Point2D(mapSize*0.3, mapSize*0.3), _move);
+							goToAdv(Point2D(mapSize*0.3, mapSize*0.3), _move);
 							enemy = closestWizard;
 							e_d = distance;
 						}
@@ -490,13 +465,13 @@ bool MyStrategy::getBonus(model::Move & _move)
 							setStrafe(_move);
 							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 70)
 								_move.setAction(ActionType::ACTION_STAFF);
-							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
+							else if ( isSkillsEnable && numOfLearnedSkills > 9 && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
 							{
 								_move.setAction(ActionType::ACTION_FROST_BOLT);
 								_move.setCastAngle(self.getAngleTo(*enemy));
 								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getFrostBoltRadius());
 							}
-							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
+							else if (isSkillsEnable && numOfLearnedSkills > 14 && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
 							{
 								_move.setAction(ActionType::ACTION_FIREBALL);
 								_move.setCastAngle(self.getAngleTo(*enemy));
@@ -526,13 +501,13 @@ bool MyStrategy::getBonus(model::Move & _move)
 
 						if ((c_dist < 80) && (fabs(fabs(self.getAngleTo(mapSize*0.3, mapSize*0.3) - PI) < game.getStaffSector()))) // враг близко и бонус с другой стороны, то основной враг - он
 						{
-							goBackwardTo(Point2D(mapSize*0.7, mapSize*0.7), _move);
+							goBackwardToAdv(Point2D(mapSize*0.7, mapSize*0.7), _move);
 							enemy = closestEnemy;
 							e_d = c_dist;
 						}
 						else
 						{
-							goTo(Point2D(mapSize*0.7, mapSize*0.7), _move);
+							goToAdv(Point2D(mapSize*0.7, mapSize*0.7), _move);
 							enemy = closestWizard;
 							e_d = distance;
 						}
@@ -543,13 +518,13 @@ bool MyStrategy::getBonus(model::Move & _move)
 							setStrafe(_move);
 							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 70)
 								_move.setAction(ActionType::ACTION_STAFF);
-							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
+							else if (isSkillsEnable && numOfLearnedSkills>9 && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
 							{
 								_move.setAction(ActionType::ACTION_FROST_BOLT);
 								_move.setCastAngle(self.getAngleTo(*enemy));
 								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getFrostBoltRadius());
 							}
-							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
+							else if (isSkillsEnable && numOfLearnedSkills>14 && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
 							{
 								_move.setAction(ActionType::ACTION_FIREBALL);
 								_move.setCastAngle(self.getAngleTo(*enemy));
@@ -664,6 +639,15 @@ void MyStrategy::getTargets()
 			}
 		}
 	}
+
+	if (closestFriend != nullptr) d_f   = self.getDistanceTo(*closestFriend);
+	if (closestEnemy != nullptr) d_e    = self.getDistanceTo(*closestEnemy);
+	if (closestBuilding != nullptr) d_b = self.getDistanceTo(*closestBuilding);
+	if (closestWizard != nullptr) d_w   = self.getDistanceTo(*closestWizard);
+	if (closestMinion != nullptr) d_m   = self.getDistanceTo(*closestMinion);
+	if (weakestEnemy != nullptr) d_wt   = self.getDistanceTo(*weakestEnemy);
+	if (closestNeutral != nullptr) d_n  = self.getDistanceTo(*closestNeutral);
+
 	return;
 }
 
@@ -698,49 +682,203 @@ void MyStrategy::setStrafe(model::Move & _move)
 
 void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Game& _game, Move& _move, const LivingUnit& enemy)
 {
+	if (isSkillsEnable)
+	{
+		attackEnemyAdv(_self,_world, _game, _move, enemy);
+		return;
+	}
+
 	double distance = _self.getDistanceTo(enemy);	
 	double angle = _self.getAngleTo(enemy);	
-	setStrafe(_move);
-	_move.setTurn(angle);
+	//setStrafe(_move);
 			
 	if (_self.getRemainingActionCooldownTicks() == 0)
 	{
-		int i = self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT];
 		// ≈сли цель перед нами, ...
 		if (fabs(angle) < _game.getStaffSector() / 2.0)
 		{
-			if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance <= 80) {
-				goTo(Point2D(enemy.getX(), enemy.getY()), _move);
+			if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance <= 80)
+			{
+				goToAdv(Point2D(enemy.getX(), enemy.getY()), _move);
 				_move.setAction(ActionType::ACTION_STAFF);
 				return;
-			}
-			else if ( (enemy.getMaxLife()/(enemy.getLife()) ) > 4 && /*enemy.getRadius() == 35 &&*/
-				self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
-			{
-				_move.setAction(ActionType::ACTION_FROST_BOLT);
-				_move.setCastAngle(self.getAngleTo(enemy));
-				_move.setMinCastDistance(distance - (enemy).getRadius() + game.getFrostBoltRadius());
-			}	
-			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
-			{
-				_move.setAction(ActionType::ACTION_FIREBALL);
-				_move.setCastAngle(angle);
-				_move.setMinCastDistance(distance - enemy.getRadius() + _game.getFireballRadius());
-			}
+			}		
 			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
 			{
+				_move.setTurn(angle);
 				_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
 				_move.setCastAngle(angle);
 				_move.setMinCastDistance(distance - enemy.getRadius() + _game.getMagicMissileRadius());
+				lastDodgeDir *= -1;
 			}
+			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 15)
+				_move.setTurn(angle); 
+			else dodgeFrom(_self, _world, _game, _move, enemy);
 		}
+		else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 15)
+			_move.setTurn(angle);
+		else dodgeFrom(_self, _world, _game, _move, enemy);
+	}
+	else if (distance < self.getCastRange() - 100)
+	{
+		goBackwardToAdv(getPreviousWaypoint(), _move);
+	}	
+	else dodgeFrom(_self, _world, _game, _move, enemy);
+}
+
+void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World & _world, const model::Game & _game, model::Move & _move, const model::LivingUnit & enemy)
+{
+	double distance = _self.getDistanceTo(enemy);
+	double angle = _self.getAngleTo(enemy);
+	//setStrafe(_move);
+	
+
+	if (_self.getRemainingActionCooldownTicks() == 0)
+	{		
+		// ≈сли цель перед нами, ...
+		if (fabs(angle) < _game.getStaffSector() / 2.0)
+		{
+			if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance <= 80)
+			{
+				goToAdv(Point2D(enemy.getX(), enemy.getY()), _move);
+				_move.setAction(ActionType::ACTION_STAFF);
+				return;
+			}
+			else if (numOfLearnedSkills > 9 && (enemy.getMaxLife() / (enemy.getLife())) > 4 && /*enemy.getRadius() == 35 &&*/
+				self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
+			{
+				_move.setTurn(angle);
+				_move.setAction(ActionType::ACTION_FROST_BOLT);
+				_move.setCastAngle(self.getAngleTo(enemy));
+				_move.setMinCastDistance(distance - (enemy).getRadius() + game.getFrostBoltRadius());
+				lastDodgeDir *= -1;
+			}
+			else if (numOfLearnedSkills > 14 && _self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10 &&
+				self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FIREBALL] == 0)
+			{
+				_move.setTurn(angle);
+				_move.setAction(ActionType::ACTION_FIREBALL);
+				_move.setCastAngle(angle);
+				_move.setMinCastDistance(distance - enemy.getRadius() + _game.getFireballRadius());
+				lastDodgeDir *= -1;
+			}
+			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
+			{
+				_move.setTurn(angle);
+				_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
+				_move.setCastAngle(angle);
+				_move.setMinCastDistance(distance - enemy.getRadius() + _game.getMagicMissileRadius());
+				lastDodgeDir *= -1;
+			}
+			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 15)
+				_move.setTurn(angle);
+			else dodgeFrom(_self, _world, _game, _move, enemy);
+		}
+		else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 15)
+			_move.setTurn(angle);
+		else dodgeFrom(_self, _world, _game, _move, enemy);
 	}
 	//else if (distance < 100)
 	//	goBackwardFrom(Point2D(enemy.getX(), enemy.getY()), _move);
-	else if (distance < 400)
+	else if (distance < self.getCastRange() - 100)
 	{
 		goBackwardTo(getPreviousWaypoint(), _move);
-	}	
+	}
+	else dodgeFrom(_self, _world, _game, _move, enemy);
+}
+
+void MyStrategy::dodgeFrom(const model::Wizard & _self, const model::World & _world, const model::Game & _game, model::Move & _move, const model::LivingUnit & enemy)
+{
+	if (self.getLife() == self.getMaxLife()) return;
+	Point2D point = Point2D(enemy.getX(), enemy.getY());
+
+	double angle1 = self.getAngleTo(self.getX() - (point.getY() - self.getY()), self.getY() + (point.getX() - self.getX()));
+	double angle2 = self.getAngleTo(self.getX() + (point.getY() - self.getY()), self.getY() - (point.getX() - self.getX()));
+	
+	_move.setStrafeSpeed(0);
+	double angle = lastDodgeDir > 0 ? angle1 : angle2;
+
+	_move.setTurn(angle);
+
+	if (fabs(angle) < game.getWizardMaxTurnAngle()) {
+		_move.setSpeed(game.getWizardForwardSpeed());
+	}
+}
+
+void MyStrategy::goToAdv(const Point2D & point, model::Move & _move)
+{
+	if (self.getDistanceTo(point.getX(), point.getY()) < 10) return;
+
+
+	if (self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1 && d_f <= self.getRadius() + closestFriend->getRadius() + 10) //застр€ли изза друга - обойдем его
+	{
+		double  dA = fabs(self.getAngleTo(*closestFriend) - self.getAngleTo(point.getX(), point.getY()));
+		if (dA< PI / 2)
+			goTangentialFrom(Point2D(closestFriend->getX(), closestFriend->getY()), point, _move);
+		else
+			goTo(point, _move);
+	}
+	else if (self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1) // застр€ли хрен пойми почему
+	{
+		Tree tree = getClosestTree();
+		if (self.getDistanceTo(tree) < self.getRadius() + tree.getRadius() + 10)
+		{
+			goTo(Point2D(tree.getX(), tree.getY()), _move);
+			_move.setAction(ActionType::ACTION_STAFF);
+		}
+		else if (d_n < 6000 && d_n < self.getRadius() + closestNeutral->getRadius() + 5)
+		{			
+			goTangentialFrom(Point2D(closestNeutral->getX(), closestNeutral->getY()), point, _move);
+			setStrafe(_move);
+		}
+		else
+			_move.setSpeed(rand() % 2 ? -game.getWizardForwardSpeed() : game.getWizardForwardSpeed()); // не работает, переделать, учесть деревь€
+	}
+	else
+		goTo(point, _move);
+}
+
+
+void MyStrategy::learnSkills(const model::Wizard & _self, model::Move& _move)
+{
+	SkillType skill = SkillType::_SKILL_UNKNOWN_;
+	switch (nextSkill)
+	{
+	case 0:	skill = SkillType::SKILL_RANGE_BONUS_PASSIVE_1; break;
+	case 1: skill = SkillType::SKILL_RANGE_BONUS_AURA_1; break;
+	case 2: skill = SkillType::SKILL_RANGE_BONUS_PASSIVE_2; break;
+	case 3: skill = SkillType::SKILL_RANGE_BONUS_AURA_2; break;
+	case 4: skill = SkillType::SKILL_ADVANCED_MAGIC_MISSILE; break;
+	//next 
+	
+	case 5: skill = SkillType::SKILL_MAGICAL_DAMAGE_BONUS_PASSIVE_1; break;
+	case 6: skill = SkillType::SKILL_MAGICAL_DAMAGE_BONUS_AURA_1; break;
+	case 7: skill = SkillType::SKILL_MAGICAL_DAMAGE_BONUS_PASSIVE_2; break;
+	case 8: skill = SkillType::SKILL_MAGICAL_DAMAGE_BONUS_AURA_2; break;
+	case 9: skill = SkillType::SKILL_FROST_BOLT; break;
+	//next
+	case 10: skill = SkillType::SKILL_STAFF_DAMAGE_BONUS_PASSIVE_1; break;
+	case 11: skill = SkillType::SKILL_STAFF_DAMAGE_BONUS_AURA_1; break;
+	case 12: skill = SkillType::SKILL_STAFF_DAMAGE_BONUS_PASSIVE_2; break;
+	case 13: skill = SkillType::SKILL_STAFF_DAMAGE_BONUS_AURA_2; break;
+	case 14: skill = SkillType::SKILL_FIREBALL; break;
+	default:break;
+	}
+	numOfLearnedSkills = _self.getSkills().size();
+	if (numOfLearnedSkills > nextSkill)
+		nextSkill++;
+	_move.setSkillToLearn(skill);
+	// _move.getSkillTolearn()
+	// getAuraSkillRange()
+}
+
+void MyStrategy::setMessage()
+{
+}
+
+void MyStrategy::getMessage()
+{
+	//Message.getSkillsTolearn()
 }
 
 MyStrategy::MyStrategy() {
@@ -753,9 +891,61 @@ MyStrategy::MyStrategy() {
 	LOW_HP_FACTOR = 0.25;
 	WAYPOINT_RADIUS = 100.0;
 
-	int bonusCheckTicks = 0;
+	bonusCheckTicks = 0;
 
 	STRAFE_FACTOR = 3;
 	strafeTicks = 0;
 	lastStrafeDirection = 0;
+
+	lastDodgeDir = 1;
+
+	d_f = d_e = d_w = d_b = d_m = d_wt = d_n = 6000;
+
+	isSkillsEnable = false;
+	numOfLearnedSkills = 0;
+	//learnedSkills.resize(15);
+	//for (auto &i : learnedSkills)
+	//{
+	//	i = false;
+	//}
+	nextSkill = 0;
+
+	double mapSize = 4000;
+
+	waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_MIDDLE, vector<Point2D>{
+		Point2D(100.0, mapSize - 500),
+			Point2D(100.0, mapSize - 600),
+			Point2D(800.0, mapSize - 800),
+			Point2D(900.0, mapSize - 1000),
+			Point2D(1800.0, mapSize - 1600),
+			Point2D(2000, 1900.0),
+			Point2D(2400, 1600.0),
+			Point2D(mapSize - 700.0, 700.0)
+	}));
+
+	waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_TOP, vector<Point2D>{
+		Point2D(100.0, mapSize * 0.9),
+			Point2D(200.0, mapSize * 0.75),
+			Point2D(200.0, mapSize * 0.5),
+			Point2D(200.0, 700),
+			//Point2D(800.0, 800.0),
+			//Point2D(600.0, 600.0),
+			Point2D(mapSize * 0.2, 200.0),
+			Point2D(mapSize * 0.5, 200.0),
+			Point2D(mapSize * 0.75, 200.0),
+			Point2D(mapSize - 700.0, 700.0)
+	}));
+
+	waypointsByLane.insert(std::pair<LaneType, vector<Point2D>>(LaneType::LANE_BOTTOM, vector<Point2D>{
+		Point2D(100.0, mapSize - 100.0), // go down
+			Point2D(600.0, mapSize - 200.0),
+			Point2D(mapSize * 0.25, mapSize - 150.0),
+			Point2D(mapSize * 0.5, mapSize - 200.0),
+			Point2D(mapSize * 0.75, mapSize - 200.0),
+			Point2D(3300.0, mapSize - 200.0),
+			Point2D(mapSize - 200.0, 3300),
+			Point2D(mapSize - 200.0, mapSize * 0.5),
+			Point2D(mapSize - 200.0, mapSize * 0.25),
+			Point2D(mapSize - 200.0, 200.0)
+	}));
 }
