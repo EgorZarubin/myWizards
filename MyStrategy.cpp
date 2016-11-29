@@ -10,13 +10,14 @@
 using namespace model;
 using namespace std;
 
-//изучение скиллов
-//два вида атаки чуваков
-// две функции goTo
-// хорошее уклонение
+
+// улучшить уклонение
+// предсказывать положение врагов
+
 // сделать  хорошие опорные точки (возможно подходить к ним ближе)
 // улучшить движение задним ходом
 // пробегать через деревья, средний бонус из двух вариантов
+// заливка 
 
 void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _game, Move& _move) {
   	
@@ -460,9 +461,9 @@ bool MyStrategy::getBonus(model::Move & _move)
 							e_d = distance;
 						}
 						//атакуем, если видим вражеского волшебника
-						if (e_d < self.getCastRange() && fabs(self.getAngleTo(*enemy)) < game.getStaffSector() / 2.0)
+						if (self.getRemainingActionCooldownTicks() == 0 && e_d < self.getCastRange() && fabs(self.getAngleTo(*enemy)) < game.getStaffSector() / 2.0)
 						{	
-							setStrafe(_move);
+							//setStrafe(_move);
 							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 70)
 								_move.setAction(ActionType::ACTION_STAFF);
 							else if ( isSkillsEnable && numOfLearnedSkills > 9 && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
@@ -513,9 +514,9 @@ bool MyStrategy::getBonus(model::Move & _move)
 						}
 
 						//атакуем, если видим вражеского волшебника					
-						if (e_d < self.getCastRange() && fabs(self.getAngleTo(*enemy)) < game.getStaffSector() / 2.0)
+						if (self.getRemainingActionCooldownTicks() == 0 && e_d < self.getCastRange() && fabs(self.getAngleTo(*enemy)) < game.getStaffSector() / 2.0)
 						{
-							setStrafe(_move);
+							//setStrafe(_move);
 							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 70)
 								_move.setAction(ActionType::ACTION_STAFF);
 							else if (isSkillsEnable && numOfLearnedSkills>9 && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
@@ -711,15 +712,15 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 				_move.setMinCastDistance(distance - enemy.getRadius() + _game.getMagicMissileRadius());
 				lastDodgeDir *= -1;
 			}
-			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 15)
+			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12)
 				_move.setTurn(angle); 
-			else if (distance > 80) dodgeFrom(_self, _world, _game, _move, enemy);
+			else if (distance > self.getCastRange() - 50) dodgeFrom(_self, _world, _game, _move, enemy);
 		}
-		else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 15)
+		else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12)
 			_move.setTurn(angle);
 		else dodgeFrom(_self, _world, _game, _move, enemy);
 	}
-	else if (distance < self.getCastRange() - 100)
+	else if (distance < self.getCastRange() - 50)
 	{
 		goBackwardTo(getPreviousWaypoint(), _move); //ADV?
 	}	
@@ -771,17 +772,17 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 				_move.setMinCastDistance(distance - enemy.getRadius() + _game.getMagicMissileRadius());
 				lastDodgeDir *= -1;
 			}
-			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 15)
+			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12)
 				_move.setTurn(angle);
-			else if (distance > 80) dodgeFrom(_self, _world, _game, _move, enemy);
+			else if (distance > self.getCastRange() - 50) dodgeFrom(_self, _world, _game, _move, enemy);
 		}
-		else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 15)
+		else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12)
 			_move.setTurn(angle);
 		else dodgeFrom(_self, _world, _game, _move, enemy);
 	}
 	//else if (distance < 100)
 	//	goBackwardFrom(Point2D(enemy.getX(), enemy.getY()), _move);
-	else if (distance < self.getCastRange() - 100)
+	else if (distance < self.getCastRange() - 50)
 	{
 		goBackwardTo(getPreviousWaypoint(), _move); //Adv?
 	}
@@ -791,10 +792,9 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 void MyStrategy::dodgeFrom(const model::Wizard & _self, const model::World & _world, const model::Game & _game, model::Move & _move, const model::LivingUnit & enemy)
 {
 	if (self.getLife() == self.getMaxLife()) return;
-	if (true)
+	if (numOfLearnedSkills > 4)
 	{		
 		_move.setStrafeSpeed(lastDodgeDir * game.getWizardStrafeSpeed());		
-		//setStrafe(_move);
 		return;
 	}
 	Point2D point = Point2D(enemy.getX(), enemy.getY());
@@ -923,7 +923,7 @@ MyStrategy::MyStrategy() {
 
 	bonusCheckTicks = 0;
 
-	STRAFE_FACTOR = 10;
+	STRAFE_FACTOR = 5;
 	strafeTicks = 0;
 	lastStrafeDirection = 0;
 
