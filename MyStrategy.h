@@ -59,6 +59,7 @@ protected:
 	// critical values
 	double WAYPOINT_RADIUS;
 	double LOW_HP_FACTOR;
+	bool ALLOW_PREDICTION;
 	
 	bool isSkillsEnable;
 	//std::vector<bool> learnedSkills;

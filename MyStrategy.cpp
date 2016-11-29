@@ -110,22 +110,22 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	case 41:
 		if (d_w < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 			attackEnemy(_self, _world, _game, _move, *closestWizard);
-		goToAdv(Point2D(1150, 1250), _move);
+		goToAdv(Point2D(1200, 1200), _move);
 		return;
 	case 42:
 		if (d_w < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 			attackEnemy(_self, _world, _game, _move, *closestWizard);
-		goToAdv(Point2D(2750, 2850), _move);
+		goToAdv(Point2D(2800, 2800), _move);
 		return;
 	default: break;
 	}
 
 	//если мало жизней- отбегаем назад (стоит ли?) и все
-	//if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR && _self.getDistanceTo(0,0) > 500)
-	//{
-	//	goBackwardTo(getPreviousWaypoint(), _move);
-	//	return;
-	//}
+	if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR && _self.getDistanceTo(0,0) > 500)
+	{
+		goToAdv(getPreviousWaypoint(), _move);
+		return;
+	}
 	
 	// приоритет атаки. сейчас это: совсем близкие чуваки, волшебники, самые слабые типы, башни, миньоны
 	if (d_e < _self.getCastRange()) //если хоть кто то в пределах досягаемости
@@ -379,31 +379,38 @@ void MyStrategy::goTangentialFrom(const Point2D & point, const Point2D & nextPoi
 }
 
 int MyStrategy::getCloseToBonus(model::Move & _move)
-{ 
-	if (world.getTickIndex() - lastBonusCheck < game.getBonusAppearanceIntervalTicks() - 350 ) return 0;
+{ 	
+	double d = std::min(self.getDistanceTo(2800, 2800), self.getDistanceTo(1200, 1200));
+	int t = d / (game.getWizardForwardSpeed());// время, необходимое чтобы добраться до бонуса
+
+	if ((world.getTickIndex() - lastBonusCheck < game.getBonusAppearanceIntervalTicks() - t) ||
+		(world.getTickIndex() > 17500 && lastBonusCheck == 17500))
+		return 0;
 
 	//bonusCheckTicks++;
 	//if (bonusCheckTicks > 500) // если бонус проверяли давно, то он не проверен
 	//	bonusChecked = false;  
 	//if (bonusChecked) return 0; // если недавно - уходим
 
-	double mapSize = game.getMapSize();
-	double x = self.getX();
-	double y = self.getY();
-
+	const double mapSize = game.getMapSize();
+	const double x = self.getX();
+	const double y = self.getY();
+	
 	posBeforeBonus = Point2D(x, y);	//поменяется когда заберем бонус
 	
-	if (world.getTickIndex() - lastBonusCheck > game.getBonusAppearanceIntervalTicks() - 250)
-		if (self.getDistanceTo(1200, 1200) < self.getVisionRange()+50)
+	if (world.getTickIndex() - lastBonusCheck > game.getBonusAppearanceIntervalTicks() - t)
+		if ( (self.getDistanceTo(1200, 1200) < self.getVisionRange()+50) && d > 60)
 			return 41;
-		else if (self.getDistanceTo(2800, 2800) < self.getVisionRange()+50)
+		else if ((self.getDistanceTo(2800, 2800) < self.getVisionRange()+50) && d > 60)
 			return 42;
 
 	// разделяем зоны на близость к бонусам
-	if (x < 820 && y < 820 ) return 1;
+	if (x < 820 && y < 820) return 1;
 	if (x < 1600 && y < 400) return 11;
+
 	if ((x > mapSize - 820 && y > mapSize - 820)) return 3;
 	if ((x > mapSize - 400 && y > mapSize - 1600)) return 31;
+
 	if (abs(x - y) < 300 && (x < mapSize - y) && x > mapSize - y - 1000) return 21;
 	if (abs(x - y) < 300 && (x > mapSize - y) && x < mapSize - y + 1000) return 22;
 	if (x > 2000 && x < 3000 && fabs(x + y - mapSize)< 300) return 23;
@@ -685,20 +692,30 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 {
 	if (isSkillsEnable)
 	{
-		attackEnemyAdv(_self,_world, _game, _move, enemy);
+		attackEnemyAdv(_self, _world, _game, _move, enemy);
 		return;
 	}
 
-	double distance = _self.getDistanceTo(enemy);	
-	double angle = _self.getAngleTo(enemy);	
+	double distance = _self.getDistanceTo(enemy);
+	double angle = _self.getAngleTo(enemy);
+
+	//////////////////предсказываем где будет юнит через премя которое летит ракета
+	if (ALLOW_PREDICTION)
+	{
+		double tRocket = distance / game.getMagicMissileSpeed();
+		Point2D enemyPrediction(enemy.getX(), enemy.getY());
+		if (enemy.getAngleTo(self) > PI / 4 && (enemy.getSpeedX() > 0 || enemy.getSpeedY() > 0))
+			enemyPrediction = enemyPrediction + Point2D(+enemy.getSpeedX()*tRocket, enemy.getSpeedY()*tRocket);
+		angle = (angle + _self.getAngleTo(enemyPrediction.getX(), enemyPrediction.getY()))/2;
+	}
 	//setStrafe(_move);
 			
-	if (_self.getRemainingActionCooldownTicks() == 0)
+	if (_self.getRemainingActionCooldownTicks() == 0 || distance < 100) //уж если близко, то деремся
 	{
 		// Если цель перед нами, ...
 		if (fabs(angle) < _game.getStaffSector() / 2.0)
 		{
-			if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance <= 80)
+			if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance <= 100)
 			{
 				goToAdv(Point2D(enemy.getX(), enemy.getY()), _move);
 				_move.setAction(ActionType::ACTION_STAFF);
@@ -740,7 +757,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 		if (fabs(angle) < _game.getStaffSector() / 2.0)
 		{
 			double life = double(enemy.getLife()) / double(enemy.getMaxLife());
-			if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance <= 80)
+			if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && distance <= 100)
 			{
 				goToAdv(Point2D(enemy.getX(), enemy.getY()), _move);
 				_move.setAction(ActionType::ACTION_STAFF);
@@ -913,13 +930,16 @@ void MyStrategy::getMessage()
 
 MyStrategy::MyStrategy() {
 
+	LOW_HP_FACTOR = 0.25;
+	WAYPOINT_RADIUS = 100.0;
+	ALLOW_PREDICTION = true;
+
 	changeLaneTo = LaneType::_LANE_UNKNOWN_;
 	lastBonusCheck = 0;
 	bonusCheckTicks = 0;
 	bonusChecked = true;
 	returnToLastPos = true;
-	LOW_HP_FACTOR = 0.25;
-	WAYPOINT_RADIUS = 100.0;
+	
 
 	bonusCheckTicks = 0;
 
