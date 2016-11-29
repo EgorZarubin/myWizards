@@ -6,18 +6,20 @@
 #include <cmath>
 #include <cstdlib>
 #include <algorithm>
+#include <memory>
 
 using namespace model;
 using namespace std;
 
 
-// улучшить уклонение
-// предсказывать положение врагов
+// улучшить уклонение 
+// предсказывать положение врагов +-
 
 // сделать  хорошие опорные точки (возможно подходить к ним ближе)
 // улучшить движение задним ходом
 // пробегать через деревья, средний бонус из двух вариантов
 // заливка 
+// перевести на шаред птры
 
 void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _game, Move& _move) {
   	
@@ -569,10 +571,10 @@ void MyStrategy::getTargets()
 	weakestEnemy = nullptr;
 	closestNeutral = nullptr;
 
-	std::vector<LivingUnit *> targets;
+	std::vector</*shared_ptr<LivingUnit>*/LivingUnit*> targets;
 	for (unsigned int i = 0; i < world.getBuildings().size(); i++)
 	{
-		targets.push_back(new LivingUnit(world.getBuildings()[i]));
+		targets.push_back(/*shared_ptr<LivingUnit>*/new LivingUnit(world.getBuildings()[i]));
 	}
 	for (unsigned int i = 0; i < world.getWizards().size(); i++)
 	{
@@ -655,7 +657,7 @@ void MyStrategy::getTargets()
 	if (closestMinion != nullptr) d_m   = self.getDistanceTo(*closestMinion);
 	if (weakestEnemy != nullptr) d_wt   = self.getDistanceTo(*weakestEnemy);
 	if (closestNeutral != nullptr) d_n  = self.getDistanceTo(*closestNeutral);
-
+		
 	return;
 }
 
@@ -708,7 +710,17 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 			enemyPrediction = enemyPrediction + Point2D(+enemy.getSpeedX()*tRocket, enemy.getSpeedY()*tRocket);
 		angle = (angle + _self.getAngleTo(enemyPrediction.getX(), enemyPrediction.getY()))/2;
 	}
-	//setStrafe(_move);
+	bool keepGoing = false;
+
+	if (enemy.getRadius() == 35) // then it is wizard
+	{
+		if (closestWizard->getAngleTo(self) < _game.getStaffSector() / 2.0)
+		{
+			//shared_ptr<Wizard> badGuy (new Wizard(enemy));
+			//closestWizard->getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE])
+		}
+			
+	}
 			
 	if (_self.getRemainingActionCooldownTicks() == 0 || distance < 100) //уж если близко, то деремся
 	{
@@ -731,7 +743,7 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 			}
 			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12)
 				_move.setTurn(angle); 
-			else if (distance > self.getCastRange() - 50) dodgeFrom(_self, _world, _game, _move, enemy);
+			else dodgeFrom(_self, _world, _game, _move, enemy); //если есть шанс уйти
 		}
 		else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12)
 			_move.setTurn(angle);
@@ -750,6 +762,14 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 	double angle = _self.getAngleTo(enemy);
 	//setStrafe(_move);
 	
+	if (ALLOW_PREDICTION)
+	{
+		double tRocket = distance / game.getMagicMissileSpeed();
+		Point2D enemyPrediction(enemy.getX(), enemy.getY());
+		if (enemy.getAngleTo(self) > PI / 4 && (enemy.getSpeedX() > 0 || enemy.getSpeedY() > 0))
+			enemyPrediction = enemyPrediction + Point2D(+enemy.getSpeedX()*tRocket, enemy.getSpeedY()*tRocket);
+		angle = (angle + _self.getAngleTo(enemyPrediction.getX(), enemyPrediction.getY())) / 2;
+	}
 
 	if (_self.getRemainingActionCooldownTicks() == 0)
 	{		
@@ -791,7 +811,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 			}
 			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12)
 				_move.setTurn(angle);
-			else if (distance > self.getCastRange() - 50) dodgeFrom(_self, _world, _game, _move, enemy);
+			else dodgeFrom(_self, _world, _game, _move, enemy); // если есть шанс уйти
 		}
 		else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12)
 			_move.setTurn(angle);
@@ -809,7 +829,8 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 void MyStrategy::dodgeFrom(const model::Wizard & _self, const model::World & _world, const model::Game & _game, model::Move & _move, const model::LivingUnit & enemy)
 {
 	if (self.getLife() == self.getMaxLife()) return;
-	if (numOfLearnedSkills > 4)
+	
+	if ((numOfLearnedSkills > 4) || (enemy.getRadius() != 35) || (self.getDistanceTo(enemy) < self.getCastRange() - 100))
 	{		
 		_move.setStrafeSpeed(lastDodgeDir * game.getWizardStrafeSpeed());		
 		return;
