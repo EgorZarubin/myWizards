@@ -6,6 +6,7 @@
 #include <list>
 #include <map>
 #include <math.h>
+#include <memory>
 
 #include "Strategy.h"
 
@@ -94,15 +95,15 @@ protected:
 	model::Move my_move;
 
 	///////////////////////////
-	model::LivingUnit * closestFriend;
+	std::shared_ptr <model::LivingUnit> closestFriend;
 	
 	//enemies
-	model::LivingUnit * closestEnemy;	
-	model::LivingUnit * closestWizard;
-	model::LivingUnit * closestBuilding;
-	model::LivingUnit * closestMinion;
-	model::LivingUnit * closestNeutral;
-	model::LivingUnit * weakestEnemy;
+	std::shared_ptr <model::LivingUnit> closestEnemy;
+	std::shared_ptr <model::LivingUnit> closestWizard;
+	std::shared_ptr<model::LivingUnit> closestBuilding;
+	std::shared_ptr<model::LivingUnit> closestMinion;
+	std::shared_ptr<model::LivingUnit> closestNeutral;
+	std::shared_ptr<model::LivingUnit> weakestEnemy;
 	double d_f, d_e, d_w, d_b, d_m, d_wt, d_n;
 
 	Point2D myLastPos;

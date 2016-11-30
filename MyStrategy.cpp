@@ -6,7 +6,6 @@
 #include <cmath>
 #include <cstdlib>
 #include <algorithm>
-#include <memory>
 
 using namespace model;
 using namespace std;
@@ -385,8 +384,13 @@ void MyStrategy::goTangentialFrom(const Point2D & point, const Point2D & nextPoi
 
 int MyStrategy::getCloseToBonus(model::Move & _move)
 { 	
+	//Point2D p1(1200, 1200);
+	//Point2D p2(2800, 2800);
+	//double d1 = self.getDistanceTo(1200, 1200);
+	//double d2 = self.getDistanceTo(2800, 2800);
+
 	double d = std::min(self.getDistanceTo(2800, 2800), self.getDistanceTo(1200, 1200));
-	int t = d / (game.getWizardForwardSpeed());// время, необходимое чтобы добраться до бонуса
+	int t = (PI / game.getWizardMaxTurnAngle()) + (d / (game.getWizardForwardSpeed()));// время, необходимое чтобы добраться до бонуса
 
 	if ((world.getTickIndex() - lastBonusCheck < game.getBonusAppearanceIntervalTicks() - t) ||
 		(world.getTickIndex() > 17500 && lastBonusCheck == 17500))
@@ -445,7 +449,7 @@ bool MyStrategy::getBonus(model::Move & _move)
 		double e_d = 6000;
 		if(closestWizard != nullptr) distance = self.getDistanceTo(*closestWizard);
 		if (closestEnemy != nullptr) c_dist = self.getDistanceTo(*closestEnemy);
-		LivingUnit *enemy;
+		shared_ptr<LivingUnit> enemy;
 		if (fabs(self.getX() - self.getY()) < 400 && (d1 < 800 || d2 < 800))
 			if (d1 < d2)
 			{
@@ -574,18 +578,18 @@ void MyStrategy::getTargets()
 	weakestEnemy = nullptr;
 	closestNeutral = nullptr;
 
-	std::vector</*shared_ptr<LivingUnit>*/LivingUnit*> targets;
+	std::vector<shared_ptr<LivingUnit>> targets;
 	for (unsigned int i = 0; i < world.getBuildings().size(); i++)
 	{
-		targets.push_back(/*shared_ptr<LivingUnit>*/new LivingUnit(world.getBuildings()[i]));
+		targets.push_back(shared_ptr<LivingUnit>(new LivingUnit(world.getBuildings()[i])));
 	}
 	for (unsigned int i = 0; i < world.getWizards().size(); i++)
 	{
-		targets.push_back(new LivingUnit(world.getWizards()[i]));
+		targets.push_back(shared_ptr<LivingUnit>(new LivingUnit(world.getWizards()[i])));
 	}
 	for (unsigned int i = 0; i < world.getMinions().size(); i++)
 	{
-		targets.push_back(new LivingUnit(world.getMinions()[i]));
+		targets.push_back(shared_ptr<LivingUnit>(new LivingUnit(world.getMinions()[i])));
 	}
 
 	if (targets.size() == 0) return;
@@ -598,7 +602,7 @@ void MyStrategy::getTargets()
 
 	// упорядочиваем цели по здоровью
 	std::sort(targets.begin(), targets.end(),
-		[](LivingUnit* u1, LivingUnit* u2) {
+		[](shared_ptr<LivingUnit> u1, shared_ptr<LivingUnit> u2) {
 		return ( double(u1->getLife())/double(u1->getMaxLife())  <   double(u2->getLife()) / double(u2->getMaxLife()));
 	});
 
@@ -705,13 +709,14 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 	double angle = _self.getAngleTo(enemy);
 
 	//////////////////предсказываем где будет юнит через премя которое летит ракета
+
 	if (ALLOW_PREDICTION)
 	{
 		double tRocket = distance / game.getMagicMissileSpeed();
 		Point2D enemyPrediction(enemy.getX(), enemy.getY());
 		if (enemy.getAngleTo(self) > PI / 4 && (enemy.getSpeedX() > 0 || enemy.getSpeedY() > 0))
 			enemyPrediction = enemyPrediction + Point2D(+enemy.getSpeedX()*tRocket, enemy.getSpeedY()*tRocket);
-		angle = (angle + _self.getAngleTo(enemyPrediction.getX(), enemyPrediction.getY()))/2;
+		angle = _self.getAngleTo(enemyPrediction.getX(), enemyPrediction.getY());
 	}
 	bool keepGoing = false;
 
@@ -719,8 +724,12 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 	{
 		if (closestWizard->getAngleTo(self) < _game.getStaffSector() / 2.0)
 		{
-			//shared_ptr<Wizard> badGuy (new Wizard(enemy));
-			//closestWizard->getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE])
+			//Wizard* badGuy = dynamic_cast<Wizard*> (closestWizard.get()); //не работает
+			Wizard* badGuy = static_cast<Wizard*> (closestWizard.get());
+			double tRocket = distance / game.getMagicMissileSpeed();
+			if(badGuy != nullptr && badGuy != NULL)
+			if ((badGuy->getDistanceTo(self) < badGuy->getCastRange()) &&  (badGuy->getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE]) < 60 - tRocket)
+				keepGoing = true;
 		}
 			
 	}
@@ -771,7 +780,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 		Point2D enemyPrediction(enemy.getX(), enemy.getY());
 		if (enemy.getAngleTo(self) > PI / 4 && (enemy.getSpeedX() > 0 || enemy.getSpeedY() > 0))
 			enemyPrediction = enemyPrediction + Point2D(+enemy.getSpeedX()*tRocket, enemy.getSpeedY()*tRocket);
-		angle = (angle + _self.getAngleTo(enemyPrediction.getX(), enemyPrediction.getY())) / 2;
+		angle = _self.getAngleTo(enemyPrediction.getX(), enemyPrediction.getY());
 	}
 
 	if (_self.getRemainingActionCooldownTicks() == 0)
