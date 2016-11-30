@@ -45,6 +45,12 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		else getMessage();
 		learnSkills(_self, _move);
 	}
+
+	if (underBonus)
+	{
+		if (bonus.getType() == BonusType::BONUS_HASTE)
+			SPEED_BONUS_FACTOR = game.getHastenedMovementBonusFactor();
+	}
 	
 	//если видим бонус - бежим к нему и все
 	if (getBonus(_move)) return;	
@@ -116,10 +122,14 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 			attackEnemy(_self, _world, _game, _move, *closestWizard);
 		goToAdv(Point2D(1200, 1200), _move);
 		return;
+	case 410:
+		return;
 	case 42:
 		if (d_w < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 			attackEnemy(_self, _world, _game, _move, *closestWizard);
 		goToAdv(Point2D(2800, 2800), _move);
+		return;
+	case 420:
 		return;
 	default: break;
 	}
@@ -183,6 +193,8 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 void MyStrategy::clearValues()
 {
 	d_f = d_e = d_w = d_b = d_m = d_wt = d_n = 6000;
+	if (underBonus && world.getTickIndex() - lastBonusCheck > 2400)
+		underBonus = false;
 }
 
 /**
@@ -192,31 +204,49 @@ void MyStrategy::clearValues()
 * случайных чисел значением, полученным от симулятора игры.
 */
 void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
-	
+
 	//if (random == null) {
 	//	random = new Random(game.getRandomSeed());
 
-	
 
-		switch (static_cast<int>(_self.getId())) 
+
+	switch (static_cast<int>(_self.getId()))
+	{
+	case 1:
+	case 2:
+	case 6:
+	case 7:
+		lane = LaneType::LANE_TOP;
+		break;
+	case 3:
+	case 8:
+		lane = LaneType::LANE_MIDDLE;
+		break;
+	case 4:
+	case 5:
+	case 9:
+	case 10:
+		lane = LaneType::LANE_BOTTOM;
+		break;
+	default: break;
+	}
+
+	double distanceToLane = 6000;
+
+	if ((lane == LaneType::LANE_TOP && (self.getX() > 1000 && self.getY() > 1000)) ||
+		(lane == LaneType::LANE_MIDDLE && fabs(game.getMapSize() - (self.getX() + self.getY())) > 600) ||
+		(lane == LaneType::LANE_BOTTOM && (self.getX() < 3000 && self.getY() < 3000)))
+		// если оказались не там, где надо
 		{
-		case 1:
-		case 2:
-		case 6:
-		case 7:
-			lane = LaneType::LANE_TOP;
-			break;
-		case 3:
-		case 8:
-			lane = LaneType::LANE_MIDDLE;
-			break;
-		case 4:
-		case 5:
-		case 9:
-		case 10:
-			lane = LaneType::LANE_BOTTOM;
-			break;
-		default: break;
+			for (auto & route : waypointsByLane)
+			{
+				for (Point2D & point : route.second)
+					if (distanceToLane > self.getDistanceTo(point.getX(), point.getY()))
+					{
+						distanceToLane = self.getDistanceTo(point.getX(), point.getY());
+						changeLaneTo = route.first;
+					}
+			}
 		}
 
 		if (changeLaneTo != LaneType::_LANE_UNKNOWN_)
@@ -299,7 +329,7 @@ void MyStrategy::goTo(const Point2D & point, Move& _move)
 	_move.setTurn(angle);
 
 	if (fabs(angle) < game.getWizardMaxTurnAngle())
-		_move.setSpeed(game.getWizardForwardSpeed());
+		_move.setSpeed(SPEED_BONUS_FACTOR + game.getWizardForwardSpeed());
 
 }
 
@@ -310,7 +340,7 @@ void MyStrategy::goBackwardTo(const Point2D & point, Move& _move)
 
 	_move.setTurn(angle);
 	if (fabs(angle) < game.getWizardMaxTurnAngle())
-		_move.setSpeed(-game.getWizardForwardSpeed());
+		_move.setSpeed(-SPEED_BONUS_FACTOR -game.getWizardForwardSpeed());
 
 }
 
@@ -348,7 +378,7 @@ void MyStrategy::goBackwardToAdv(const Point2D & point, Move& _move)
 		double angle = self.getAngleTo(2 * self.getX() - point.getX(), 2 * self.getY() - point.getY());
 		_move.setTurn(angle);
 		if (fabs(angle) < game.getWizardMaxTurnAngle())
-			_move.setSpeed(-game.getWizardForwardSpeed());
+			_move.setSpeed(-game.getWizardForwardSpeed()- SPEED_BONUS_FACTOR);
 	}
 }
 
@@ -357,7 +387,7 @@ void MyStrategy::goBackwardFrom (const Point2D & point, Move& _move)
 	double angle = self.getAngleTo(point.getX(), point.getY());
 	_move.setTurn(angle);
 	if (fabs(angle) < game.getWizardMaxTurnAngle()) {
-		_move.setSpeed(-game.getWizardForwardSpeed());
+		_move.setSpeed(-game.getWizardForwardSpeed()-SPEED_BONUS_FACTOR);
 	}
 }
 
@@ -408,10 +438,10 @@ int MyStrategy::getCloseToBonus(model::Move & _move)
 	posBeforeBonus = Point2D(x, y);	//поменяется когда заберем бонус
 	
 	if (world.getTickIndex() - lastBonusCheck > game.getBonusAppearanceIntervalTicks() - t)
-		if ( (self.getDistanceTo(1200, 1200) < self.getVisionRange()+50) && d > 60)
-			return 41;
-		else if ((self.getDistanceTo(2800, 2800) < self.getVisionRange()+50) && d > 60)
-			return 42;
+		if ( (self.getDistanceTo(1200, 1200) < self.getVisionRange()+50) && d > 65)
+			return (d > self.getRadius()+ game.getBonusRadius() + 5)? 41 : 410;
+		else if ((self.getDistanceTo(2800, 2800) < self.getVisionRange()+50) && d > 65)
+			return (d > self.getRadius() + game.getBonusRadius() + 5) ? 42 : 420;
 
 	// разделяем зоны на близость к бонусам
 	if (x < 820 && y < 820) return 1;
@@ -439,6 +469,14 @@ bool MyStrategy::getBonus(model::Move & _move)
 	int i = (game.getBonusAppearanceIntervalTicks() - world.getTickIndex()%game.getBonusAppearanceIntervalTicks());
 	if (bonuses.size() != 0)
 	{
+		if (d1 < self.getRadius() + game.getBonusRadius() + 4.0 || d1 < self.getRadius() + game.getBonusRadius() + 4.0) {
+			underBonus = true;
+			if (bonuses.size() == 1) bonus = bonuses[0];
+			else if (self.getDistanceTo(bonuses[0]) < self.getDistanceTo(bonuses[1]))
+				bonus = bonuses[0];
+			else 
+				bonus = bonuses[1];
+		}
 		// бонус проверен, либо мы его захаваем либо не мы, точно пропадет(или меня завалят)
 		returnToLastPos = true;
 		bonusChecked = true;
@@ -578,18 +616,23 @@ void MyStrategy::getTargets()
 	weakestEnemy = nullptr;
 	closestNeutral = nullptr;
 
+	//LivingUnit * unit = nullptr;
+	//Building * b = nullptr;
+	//if (world.getBuildings().size() != 0)
+	//	unit = static_cast<LivingUnit*> (&(world.getBuildings()[0]));
+
 	std::vector<shared_ptr<LivingUnit>> targets;
 	for (unsigned int i = 0; i < world.getBuildings().size(); i++)
 	{
-		targets.push_back(shared_ptr<LivingUnit>(new LivingUnit(world.getBuildings()[i])));
+		targets.push_back(shared_ptr<LivingUnit>(new Building(world.getBuildings()[i])));
 	}
 	for (unsigned int i = 0; i < world.getWizards().size(); i++)
 	{
-		targets.push_back(shared_ptr<LivingUnit>(new LivingUnit(world.getWizards()[i])));
+		targets.push_back(shared_ptr<LivingUnit>(new Wizard(world.getWizards()[i])));
 	}
 	for (unsigned int i = 0; i < world.getMinions().size(); i++)
 	{
-		targets.push_back(shared_ptr<LivingUnit>(new LivingUnit(world.getMinions()[i])));
+		targets.push_back(shared_ptr<LivingUnit>(new Minion(world.getMinions()[i])));
 	}
 
 	if (targets.size() == 0) return;
@@ -727,9 +770,9 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 			//Wizard* badGuy = dynamic_cast<Wizard*> (closestWizard.get()); //не работает
 			Wizard* badGuy = static_cast<Wizard*> (closestWizard.get());
 			double tRocket = distance / game.getMagicMissileSpeed();
-			if(badGuy != nullptr && badGuy != NULL)
-			if ((badGuy->getDistanceTo(self) < badGuy->getCastRange()) &&  (badGuy->getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE]) < 60 - tRocket)
-				keepGoing = true;
+			if (badGuy != nullptr && badGuy != NULL)
+				if ((badGuy->getDistanceTo(self) < badGuy->getCastRange()) && (badGuy->getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE]) < 60 - tRocket)
+					keepGoing = false;// true;
 		}
 			
 	}
@@ -753,11 +796,11 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 				_move.setMinCastDistance(distance - enemy.getRadius() + _game.getMagicMissileRadius());
 				lastDodgeDir *= -1;
 			}
-			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12)
+			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12 && !keepGoing)
 				_move.setTurn(angle); 
 			else dodgeFrom(_self, _world, _game, _move, enemy); //если есть шанс уйти
 		}
-		else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12)
+		else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12 && !keepGoing)
 			_move.setTurn(angle);
 		else dodgeFrom(_self, _world, _game, _move, enemy);
 	}
@@ -781,6 +824,20 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 		if (enemy.getAngleTo(self) > PI / 4 && (enemy.getSpeedX() > 0 || enemy.getSpeedY() > 0))
 			enemyPrediction = enemyPrediction + Point2D(+enemy.getSpeedX()*tRocket, enemy.getSpeedY()*tRocket);
 		angle = _self.getAngleTo(enemyPrediction.getX(), enemyPrediction.getY());
+	}
+
+	bool keepGoing = false;
+
+	if (enemy.getRadius() == 35) // then it is wizard
+	{
+		if (closestWizard->getAngleTo(self) < _game.getStaffSector() / 2.0)
+		{
+			Wizard* badGuy = static_cast<Wizard*> (closestWizard.get());
+			double tRocket = distance / game.getMagicMissileSpeed();
+			if (badGuy != nullptr && badGuy != NULL)
+				if ((badGuy->getDistanceTo(self) < badGuy->getCastRange()) && (badGuy->getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE]) < 60 - tRocket)
+					keepGoing = false;// true;
+		}
 	}
 
 	if (_self.getRemainingActionCooldownTicks() == 0)
@@ -821,11 +878,11 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 				_move.setMinCastDistance(distance - enemy.getRadius() + _game.getMagicMissileRadius());
 				lastDodgeDir *= -1;
 			}
-			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12)
+			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12 && !keepGoing)
 				_move.setTurn(angle);
 			else dodgeFrom(_self, _world, _game, _move, enemy); // если есть шанс уйти
 		}
-		else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12)
+		else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12 && !keepGoing)
 			_move.setTurn(angle);
 		else dodgeFrom(_self, _world, _game, _move, enemy);
 	}
@@ -965,6 +1022,7 @@ MyStrategy::MyStrategy() {
 
 	LOW_HP_FACTOR = 0.25;
 	WAYPOINT_RADIUS = 100.0;
+	SPEED_BONUS_FACTOR = 0.0;
 	ALLOW_PREDICTION = true;
 
 	changeLaneTo = LaneType::_LANE_UNKNOWN_;
@@ -973,7 +1031,7 @@ MyStrategy::MyStrategy() {
 	bonusChecked = true;
 	returnToLastPos = true;
 	
-
+	underBonus = true;
 	bonusCheckTicks = 0;
 
 	STRAFE_FACTOR = 5;

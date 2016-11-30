@@ -60,6 +60,7 @@ protected:
 	// critical values
 	double WAYPOINT_RADIUS;
 	double LOW_HP_FACTOR;
+	double SPEED_BONUS_FACTOR;
 	bool ALLOW_PREDICTION;
 	
 	bool isSkillsEnable;
@@ -69,6 +70,10 @@ protected:
 
 
 	model::SkillType skillToLearn;
+
+	//bonus
+	bool underBonus;
+	model::Bonus bonus;
 
 	bool bonusChecked;
 	int bonusCheckTicks;
