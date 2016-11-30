@@ -209,33 +209,33 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 	//	random = new Random(game.getRandomSeed());
 
 
-
-	switch (static_cast<int>(_self.getId()))
-	{
-	case 1:
-	case 2:
-	case 6:
-	case 7:
-		lane = LaneType::LANE_TOP;
-		break;
-	case 3:
-	case 8:
-		lane = LaneType::LANE_MIDDLE;
-		break;
-	case 4:
-	case 5:
-	case 9:
-	case 10:
-		lane = LaneType::LANE_BOTTOM;
-		break;
-	default: break;
-	}
+	if (lane == LaneType::_LANE_UNKNOWN_)
+		switch (static_cast<int>(_self.getId()))
+		{
+		case 1:
+		case 2:
+		case 6:
+		case 7:
+			lane = LaneType::LANE_TOP;
+			break;
+		case 3:
+		case 8:
+			lane = LaneType::LANE_MIDDLE;
+			break;
+		case 4:
+		case 5:
+		case 9:
+		case 10:
+			lane = LaneType::LANE_BOTTOM;
+			break;
+		default: break;
+		}
 
 	double distanceToLane = 6000;
 
-	if ((lane == LaneType::LANE_TOP && (self.getX() > 1000 && self.getY() > 1000)) ||
-		(lane == LaneType::LANE_MIDDLE && fabs(game.getMapSize() - (self.getX() + self.getY())) > 600) ||
-		(lane == LaneType::LANE_BOTTOM && (self.getX() < 3000 && self.getY() < 3000)))
+	if ((lane == LaneType::LANE_TOP && (_self.getX() > 1000 && _self.getY() > 1000)) ||
+		(lane == LaneType::LANE_MIDDLE && fabs(game.getMapSize() - (_self.getX() + _self.getY())) > 600) ||
+		(lane == LaneType::LANE_BOTTOM && (_self.getX() < 3000 && _self.getY() < 3000)))
 		// если оказались не там, где надо
 		{
 			for (auto & route : waypointsByLane)
@@ -1025,6 +1025,7 @@ MyStrategy::MyStrategy() {
 	SPEED_BONUS_FACTOR = 0.0;
 	ALLOW_PREDICTION = true;
 
+	lane = LaneType::_LANE_UNKNOWN_;
 	changeLaneTo = LaneType::_LANE_UNKNOWN_;
 	lastBonusCheck = 0;
 	bonusCheckTicks = 0;
