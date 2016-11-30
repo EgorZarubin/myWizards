@@ -30,10 +30,13 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	myLastPos = Point2D(self.getX(), self.getY());
 	prevLife = self.getLife();
 
+	if (_self.getLife() - prevLife > 50) changeLaneTo = LaneType::_LANE_UNKNOWN_;
+	if (_self.getDistanceTo(posBeforeBonus.getX(), posBeforeBonus.getY()) < 50 || fabs(_self.getLife() - prevLife) > 50) returnToLastPos = false;
+
 	initializeStrategy(_self, _game);
 	initializeTick(_self, _world, _game, _move);
 	
-	if (self.getDistanceTo(posBeforeBonus.getX(), posBeforeBonus.getY()) < 50 || fabs(self.getLife() - prevLife) > 50) returnToLastPos = false;
+	
 	
 	// определяем тип игры
 	isSkillsEnable = game.isSkillsEnabled();	
@@ -135,22 +138,22 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		_move.setSpeed(0);
 		LivingUnit enemy = *closestEnemy;
 		
-		if (d_e < 100 || closestEnemy->getLife() <  24)
+		if (d_e < 100)
 		{
 			enemy = *closestEnemy;
 		}
 		else if (d_w < _self.getCastRange())
 		{
 			enemy = *closestWizard;//
-		}
-		else if (d_wt < _self.getCastRange())
-		{
-			enemy = *weakestEnemy;//
 		}		
 		else if(d_b < _self.getCastRange())
 		{
 			enemy = *closestBuilding;//
-		}		
+		}
+		else if (d_wt < _self.getCastRange())
+		{
+			enemy = *weakestEnemy;//
+		}			
 		else if (d_m < _self.getCastRange())
 		{
 			enemy = *closestMinion;//
@@ -449,7 +452,7 @@ bool MyStrategy::getBonus(model::Move & _move)
 				for (auto & i : bonuses)
 					if (fabs(self.getDistanceTo(i) - d1) < 50) // если это тот бонус, который ближний
 					{
-						if (lane == LaneType::LANE_MIDDLE)
+						if (lane == LaneType::LANE_MIDDLE && !isSkillsEnable) // если скилы отключены, убегаем от башни
 						{
 							changeLaneTo = LaneType::LANE_TOP;
 							posBeforeBonus = Point2D(800, 800); // so hardcoded
