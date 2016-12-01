@@ -64,22 +64,16 @@ protected:
 	bool ALLOW_PREDICTION;
 	
 	bool isSkillsEnable;
-	//std::vector<bool> learnedSkills;
 	int numOfLearnedSkills;
 	int nextSkill;
-
-
 	model::SkillType skillToLearn;
 
 	//bonus
 	bool underBonus;
 	model::Bonus bonus;
-
 	bool bonusChecked;
-	int bonusCheckTicks;
 	int lastBonusCheck;
-	int prevLife;
-	model::LaneType changeLaneTo;
+	int prevLife;	
 
 	int STRAFE_FACTOR;
 	int strafeTicks;
@@ -87,12 +81,16 @@ protected:
 
 	int lastDodgeDir;
 
+	model::LaneType changeLaneTo;
 	std::map<model::LaneType, std::vector<Point2D>> waypointsByLane;
-
-	//Random random;
-
 	model::LaneType lane;
 	std::vector<Point2D> waypoints;
+
+	//////////////////////////////
+	std::vector<std::vector<int>> myMap;
+	//////////////////////////
+
+	
 
 	model::Wizard self;
 	model::World world;
