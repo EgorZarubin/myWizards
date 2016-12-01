@@ -124,6 +124,9 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		return;
 	case 410:
 		return;
+	case 411: 
+		goBackwardFrom(Point2D(1200, 1200), _move);
+		return;
 	case 42:
 		if (d_w < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 			attackEnemy(_self, _world, _game, _move, *closestWizard);
@@ -131,6 +134,10 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		return;
 	case 420:
 		return;
+	case 421:
+		goBackwardFrom(Point2D(28200, 2800), _move);
+		return;
+
 	default: break;
 	}
 
@@ -147,23 +154,23 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		_move.setSpeed(0);
 		LivingUnit enemy = *closestEnemy;
 		
-		if (d_e < 100)
+		if (d_e < self.getRadius() + closestEnemy->getRadius() + 40)
 		{
 			enemy = *closestEnemy;
 		}
-		else if (d_w < _self.getCastRange())
+		else if (d_w < _self.getCastRange() + game.getWizardRadius()) 
 		{
 			enemy = *closestWizard;//
 		}		
-		else if(d_b < _self.getCastRange())
+		else if(d_b < _self.getCastRange() + game.getGuardianTowerRadius())
 		{
 			enemy = *closestBuilding;//
 		}
-		else if (d_wt < _self.getCastRange())
+		else if (d_wt < _self.getCastRange() + weakestEnemy->getRadius())
 		{
 			enemy = *weakestEnemy;//
 		}			
-		else if (d_m < _self.getCastRange())
+		else if (d_m < _self.getCastRange() + game.getMinionRadius())
 		{
 			enemy = *closestMinion;//
 		}
@@ -438,10 +445,14 @@ int MyStrategy::getCloseToBonus(model::Move & _move)
 	posBeforeBonus = Point2D(x, y);	//поменяется когда заберем бонус
 	
 	if (world.getTickIndex() - lastBonusCheck > game.getBonusAppearanceIntervalTicks() - t)
-		if ( (self.getDistanceTo(1200, 1200) < self.getVisionRange()+50) && d > 65)
-			return (d > self.getRadius()+ game.getBonusRadius() + 5)? 41 : 410;
+		if ((self.getDistanceTo(1200, 1200) < self.getVisionRange() + 50))
+			if (d > self.getRadius() + game.getBonusRadius() + 10) return 41;
+			else if (d > self.getRadius() + game.getBonusRadius()+1) return 410;
+			else return 411;
 		else if ((self.getDistanceTo(2800, 2800) < self.getVisionRange()+50) && d > 65)
-			return (d > self.getRadius() + game.getBonusRadius() + 5) ? 42 : 420;
+			if (d > self.getRadius() + game.getBonusRadius() + 10) return 42;
+			else if (d > self.getRadius() + game.getBonusRadius()+1) return 420;
+			else return 421;
 
 	// разделяем зоны на близость к бонусам
 	if (x < 820 && y < 820) return 1;
@@ -650,7 +661,9 @@ void MyStrategy::getTargets()
 	});
 
 	auto it = targets.begin();
-	while (it != targets.end() && ((*it)->getFaction() == self.getFaction() || ((*it)->getDistanceTo(self)) > self.getCastRange() || (*it)->getFaction() == Faction::FACTION_NEUTRAL)){
+	while (it != targets.end() && ((*it)->getFaction() == self.getFaction() || 
+		  ((*it)->getDistanceTo(self) > self.getCastRange()  + (*it)->getRadius()) ||
+		   (*it)->getFaction() == Faction::FACTION_NEUTRAL)){
 		it++;
 	}
 	if (it != targets.end())
@@ -748,7 +761,7 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 		return;
 	}
 
-	double distance = _self.getDistanceTo(enemy);
+	double distance = _self.getDistanceTo(enemy) - enemy.getRadius() ;
 	double angle = _self.getAngleTo(enemy);
 
 	//////////////////предсказываем где будет юнит через премя которое летит ракета
@@ -813,7 +826,7 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 
 void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World & _world, const model::Game & _game, model::Move & _move, const model::LivingUnit & enemy)
 {
-	double distance = _self.getDistanceTo(enemy);
+	double distance = _self.getDistanceTo(enemy) - enemy.getRadius();
 	double angle = _self.getAngleTo(enemy);
 	//setStrafe(_move);
 	
