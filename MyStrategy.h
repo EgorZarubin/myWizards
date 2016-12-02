@@ -67,6 +67,9 @@ protected:
 	int numOfLearnedSkills;
 	int nextSkill;
 	model::SkillType skillToLearn;
+	int frostBoltSkill;
+	int advancedMagicMissileSkill;
+	int fireballSkill;
 
 	//bonus
 	bool underBonus;

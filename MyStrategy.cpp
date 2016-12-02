@@ -559,13 +559,13 @@ bool MyStrategy::getBonus(model::Move & _move)
 							//setStrafe(_move);
 							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 70)
 								_move.setAction(ActionType::ACTION_STAFF);
-							else if ( isSkillsEnable && numOfLearnedSkills > 4 && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
+							else if ( isSkillsEnable && numOfLearnedSkills > frostBoltSkill && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
 							{
 								_move.setAction(ActionType::ACTION_FROST_BOLT);
 								_move.setCastAngle(self.getAngleTo(*enemy));
 								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getFrostBoltRadius());
 							}
-							else if (isSkillsEnable && numOfLearnedSkills > 14 && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
+							else if (isSkillsEnable && numOfLearnedSkills > fireballSkill && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
 							{
 								_move.setAction(ActionType::ACTION_FIREBALL);
 								_move.setCastAngle(self.getAngleTo(*enemy));
@@ -612,13 +612,13 @@ bool MyStrategy::getBonus(model::Move & _move)
 							//setStrafe(_move);
 							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 70)
 								_move.setAction(ActionType::ACTION_STAFF);
-							else if (isSkillsEnable && numOfLearnedSkills > 4 && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
+							else if (isSkillsEnable && numOfLearnedSkills > frostBoltSkill && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
 							{
 								_move.setAction(ActionType::ACTION_FROST_BOLT);
 								_move.setCastAngle(self.getAngleTo(*enemy));
 								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getFrostBoltRadius());
 							}
-							else if (isSkillsEnable && numOfLearnedSkills > 14 && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
+							else if (isSkillsEnable && numOfLearnedSkills > fireballSkill && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
 							{
 								_move.setAction(ActionType::ACTION_FIREBALL);
 								_move.setCastAngle(self.getAngleTo(*enemy));
@@ -894,7 +894,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 				_move.setAction(ActionType::ACTION_STAFF);
 				return;
 			}
-			else if ((numOfLearnedSkills > 5) && (enemy.getLife() > 0.50) && enemy.getRadius() <= 35 &&
+			else if ((numOfLearnedSkills > frostBoltSkill) && (enemy.getLife() > 0.50) && enemy.getRadius() <= 35 &&
 				(self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0))
 			{
 				_move.setTurn(angle);
@@ -903,7 +903,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 				_move.setMinCastDistance(distance - (enemy).getRadius() + game.getFrostBoltRadius());
 				lastDodgeDir *= -1;
 			}
-			else if ((numOfLearnedSkills > 14) && (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10) &&
+			else if ((numOfLearnedSkills > fireballSkill) && (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10) &&
 				(self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FIREBALL] == 0))
 			{
 				_move.setTurn(angle);
@@ -941,7 +941,7 @@ void MyStrategy::dodgeFrom(const model::Wizard & _self, const model::World & _wo
 {
 	if (self.getLife() == self.getMaxLife()) return;
 	
-	if ((numOfLearnedSkills > 4) || (enemy.getRadius() != 35) || (self.getDistanceTo(enemy) < self.getCastRange() - 100))
+	if ((numOfLearnedSkills > advancedMagicMissileSkill) || (enemy.getRadius() != 35) || (self.getDistanceTo(enemy) < self.getCastRange() - 100))
 	{		
 		double angle = self.getAngleTo(enemy);
 		_move.setTurn(angle);
@@ -1076,6 +1076,9 @@ MyStrategy::MyStrategy() {
 	nextSkill = 0;
 	skillToLearn = SkillType::_SKILL_UNKNOWN_;
 
+	frostBoltSkill = 4;
+	advancedMagicMissileSkill = 9;
+	fireballSkill = 14;
 
 	
 	
