@@ -34,20 +34,7 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 
 	initializeStrategy(_self, _game);
 	initializeTick(_self, _world, _game, _move);
-
 	
-	if (self.getDistanceTo(1200, 1200) < 1500) {
-		fillTheMap(_world, _game); // заполняем карту видимыми объектами
-		int X = int(self.getX() / scale);
-		int Y = int(self.getY() / scale);
-		int x_to = 120;
-		int y_to = 120;
-
-		way = myWay(X, Y, x_to, y_to);
-		followWay(_move);
-		return;
-	}
-
 	// определяем тип игры
 	isSkillsEnable = game.isSkillsEnabled();	
 	if (isSkillsEnable)
@@ -160,6 +147,8 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		return;
 	case 421:
 		goBackwardFrom(Point2D(2800, 2800), _move);
+		return;
+	case 666:
 		return;
 
 	default: break;
@@ -468,10 +457,11 @@ void MyStrategy::goTangentialFrom(const Point2D & point, const Point2D & nextPoi
 
 int MyStrategy::getCloseToBonus(model::Move & _move)
 { 	
-	//Point2D p1(1200, 1200);
-	//Point2D p2(2800, 2800);
-	//double d1 = self.getDistanceTo(1200, 1200);
-	//double d2 = self.getDistanceTo(2800, 2800);
+	Point2D p1(1200, 1200);
+	Point2D p2(2800, 2800);
+	double d1 = self.getDistanceTo(1200, 1200);
+	double d2 = self.getDistanceTo(2800, 2800);
+	bool isFirstClosest = d1 < d2;
 
 	double d = std::min(self.getDistanceTo(2800, 2800), self.getDistanceTo(1200, 1200));
 	int t = (PI / game.getWizardMaxTurnAngle()) + (d / (game.getWizardForwardSpeed()));// время, необходимое чтобы добраться до бонуса
@@ -479,6 +469,18 @@ int MyStrategy::getCloseToBonus(model::Move & _move)
 	if ((world.getTickIndex() - lastBonusCheck < game.getBonusAppearanceIntervalTicks() - t) ||
 		(world.getTickIndex() > 17500 && lastBonusCheck == 17500))
 		return 0;
+
+	if  (d < 1000) {
+		fillTheMap(); // заполняем карту видимыми объектами
+		int X = int(self.getX() / scale);
+		int Y = int(self.getY() / scale);
+		int x_to = (isFirstClosest ? 1200 : 2800) / scale;
+		int y_to = (isFirstClosest ? 1200 : 2800) / scale;
+
+		way = myWay(X, Y, x_to, y_to);
+		followWay(_move);
+		return 666;
+	}
 	
 	const double mapSize = game.getMapSize();
 	const double x = self.getX();
@@ -791,7 +793,7 @@ void MyStrategy::setStrafe(model::Move & _move)
 	strafeTicks++;
 }
 
-void MyStrategy::fillTheMap( const model::World & _world, const model::Game & _game)
+void MyStrategy::fillTheMap()
 {	
 	int mapSize = 4000;
 	for (unsigned int i = 0; i < (mapSize / scale); i++)
@@ -835,6 +837,7 @@ void MyStrategy::fillTheMap( const model::World & _world, const model::Game & _g
 
 void MyStrategy::fillCircle(int x, int y, int r)
 {
+	myMap[x][y] = 1;
 	int size = 4000 / scale;
 	if (x >= size || y >= size || x + r >= size || y + r >= size || x - r < 0 || y - r < 0) return;
 	for (int i = x - r; i < x + r; i++)
@@ -849,9 +852,10 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 {
 	way.clear();
 	// будем использовать арифметику целых чисел
-	const int size = 400;
+	const int size = 100;
 	int step;
-	//int scale = 100;
+	
+	int presicion = 100;
 	
 	bool added = true, result = true;
 	for (int i = 0; i<size; i++)
@@ -876,7 +880,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 	while (added && matrix[x][y][0] == -1)
 	{
 		added = false;// Пока что ничего не добавили
-		step++;// Увеличиваем число шагов
+		step += presicion;// Увеличиваем число шагов
 
 		for (int i = 0; i<size; i++)// Пробегаем по всей карте
 		{
@@ -884,7 +888,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 			{
 				// Если (i, j) была добавлена на предыдущем шаге
 				// Пробегаем по всем четырем сторонам
-				if (matrix[i][j][0] == step - 1)
+				if (matrix[i][j][0] <= step - presicion) // <------------------
 				{
 					int _i, _j;
 
@@ -958,7 +962,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 		{
 			// тут ваш код где  записываем значение клеток и шагаем дальше к началу
 			// записывать надо _i _J	
-			way.push_back(Point2D(_i*scale, _j*scale));
+			way.push_back(Point2D(_i*scale + scale/2, _j*scale + scale / 2));
 			li = matrix[_i][_j][1];
 			lj = matrix[_i][_j][2];
 			_i = li; _j = lj;
@@ -985,15 +989,21 @@ void MyStrategy::followWay(model::Move & _move)
 			nextPoint = waypoint;
 		}
 	}*/
+	if (way.size() <= 1) return;
 	if (way.size()>3)
 		goToAdv(way[2], _move);
-	Point2D point = way[0];
-	double angle = self.getAngleTo(point.getX(), point.getY());
+	
+	Point2D point = way[1];
+	
 
-	_move.setTurn(angle);
-
-	if (fabs(angle) < game.getWizardMaxTurnAngle())
-		_move.setSpeed(SPEED_BONUS_FACTOR + game.getWizardForwardSpeed());
+	Tree tree = getClosestTree();
+	if (self.getAngleTo(tree) <  game.getStaffSector() / 2.0)
+	{
+		goTo(Point2D(tree.getX(), tree.getY()), _move);
+		_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
+		_move.setCastAngle(self.getAngleTo(tree));
+	}
+	goToAdv(point, _move);
 }
 
 void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Game& _game, Move& _move, const LivingUnit& enemy)
@@ -1312,7 +1322,7 @@ MyStrategy::MyStrategy() {
 	lastDodgeDir = 1;
 	
 	double mapSize = 4000;
-	scale = 10;
+	scale = 40;
 	for (unsigned int i = 0; i < (mapSize/scale); i++)
 	{
 		for (unsigned int j = 0; j < (mapSize / scale); j++)

@@ -93,8 +93,8 @@ protected:
 	//std::vector<std::vector<int>> myMap;
 	//////////////////////////
 	int scale;
-	int myMap[400][400];
-	int matrix[400][400][3]; //to find the way
+	int myMap[100][100];
+	int matrix[100][100][3]; //to find the way
 	std::vector<Point2D> way;
 	
 
@@ -145,7 +145,7 @@ protected:
 	void dodgeFrom(const model::Wizard& _self, const model::World& _world, const model::Game& _game, model::Move& _move, const model::LivingUnit& enemy);
 	void setStrafe(model::Move& _move);
 	
-	void fillTheMap( const model::World& _world, const model::Game& _game);
+	void fillTheMap();
 	void fillCircle( int x, int y, int r);
 	std::vector<Point2D> myWay(int x, int y, int x_to, int y_to);
 	void followWay(model::Move& _move);
