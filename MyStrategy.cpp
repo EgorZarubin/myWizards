@@ -21,11 +21,11 @@ using namespace std;
 // перевести на шаред птры
 
 void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _game, Move& _move) {
-  	
+
 	if (_world.getTickIndex() < 300) return; //стратуем чуть чуть позже, чтобы сразу не помереть
 	clearValues();
 
-	
+
 	myLastPos = Point2D(self.getX(), self.getY());
 	prevLife = self.getLife();
 
@@ -34,9 +34,20 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 
 	initializeStrategy(_self, _game);
 	initializeTick(_self, _world, _game, _move);
+
 	
-	
-	
+	if (self.getDistanceTo(1200, 1200) < 1500) {
+		fillTheMap(_world, _game); // заполняем карту видимыми объектами
+		int X = int(self.getX() / scale);
+		int Y = int(self.getY() / scale);
+		int x_to = 120;
+		int y_to = 120;
+
+		way = myWay(X, Y, x_to, y_to);
+		followWay(_move);
+		return;
+	}
+
 	// определяем тип игры
 	isSkillsEnable = game.isSkillsEnabled();	
 	if (isSkillsEnable)
@@ -507,7 +518,7 @@ bool MyStrategy::getBonus(model::Move & _move)
 	double d2 = self.getDistanceTo(mapSize*0.7, mapSize*0.7);
 
 	vector<Bonus> bonuses = world.getBonuses();
-	
+
 	int i = (game.getBonusAppearanceIntervalTicks() - world.getTickIndex()%game.getBonusAppearanceIntervalTicks());
 	if (bonuses.size() != 0)
 	{
@@ -778,6 +789,211 @@ void MyStrategy::setStrafe(model::Move & _move)
 	}
 	_move.setStrafeSpeed(lastStrafeDirection * game.getWizardStrafeSpeed());
 	strafeTicks++;
+}
+
+void MyStrategy::fillTheMap( const model::World & _world, const model::Game & _game)
+{	
+	int mapSize = 4000;
+	for (unsigned int i = 0; i < (mapSize / scale); i++)
+	{
+		for (unsigned int j = 0; j < (mapSize / scale); j++)
+			myMap[i][j] = 0;
+	}
+	int X = 0;
+	int Y = 0;
+	int R = 0;
+	for (auto &u : world.getBuildings())
+	{
+		X = static_cast<int>(u.getX() / scale);
+		Y = static_cast<int>(u.getY() / scale);
+		R = (u.getRadius() + 45) / scale;
+		fillCircle(X, Y, R);
+	}
+	for (auto &u : world.getWizards())
+	{
+		X = static_cast<int>(u.getX() / scale);
+		Y = static_cast<int>(u.getY() / scale);
+		R = (u.getRadius() + 45) / scale;
+		if (!u.isMe())fillCircle(X, Y, R);
+	}
+	for (auto &u : world.getMinions())
+	{
+		X = static_cast<int>(u.getX() / scale);
+		Y = static_cast<int>(u.getY() / scale);
+		R = (u.getRadius() + 45) / scale;
+		fillCircle(X, Y, R);
+
+	}
+	for (auto &u : world.getTrees())
+	{
+		X = static_cast<int>(u.getX() / scale);
+		Y = static_cast<int>(u.getY() / scale);
+		R = (u.getRadius() + 45) / scale;
+		fillCircle(X, Y, R);
+	}
+}
+
+void MyStrategy::fillCircle(int x, int y, int r)
+{
+	int size = 4000 / scale;
+	if (x >= size || y >= size || x + r >= size || y + r >= size || x - r < 0 || y - r < 0) return;
+	for (int i = x - r; i < x + r; i++)
+		for (int j = y - r; j < y + r; j++)
+		{
+			if ((i - x)*(i - x) + (j - y)*(j - y) < r*r)
+				myMap[i][j] = 1;
+		}
+}
+
+std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
+{
+	way.clear();
+	// будем использовать арифметику целых чисел
+	const int size = 400;
+	int step;
+	//int scale = 100;
+	
+	bool added = true, result = true;
+	for (int i = 0; i<size; i++)
+	{
+		for (int j = 0; j<size; j++)
+		{
+			if (myMap[i][j] != 0)
+			{
+				matrix[i][j][0] = -2;// занято
+			}
+			else
+			{
+				matrix[i][j][0] = -1;// Мы еще нигде не были
+			}
+		}
+	}
+	matrix[x_to][y_to][0] = 0;// До финиша ноль шагов - от него будем разбегаться
+	step = 0; // Изначально мы сделали ноль шагов
+
+			  // Пока вершины добаляются и мы не дошли до старта
+
+	while (added && matrix[x][y][0] == -1)
+	{
+		added = false;// Пока что ничего не добавили
+		step++;// Увеличиваем число шагов
+
+		for (int i = 0; i<size; i++)// Пробегаем по всей карте
+		{
+			for (int j = 0; j<size; j++)
+			{
+				// Если (i, j) была добавлена на предыдущем шаге
+				// Пробегаем по всем четырем сторонам
+				if (matrix[i][j][0] == step - 1)
+				{
+					int _i, _j;
+
+					_i = i + 1; _j = j;
+					// Если не вышли за пределы карты -  обрабатываем
+					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
+					{
+						// Если (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
+						if (matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2)
+						{
+							matrix[_i][_j][0] = step; // Добав-
+							matrix[_i][_j][1] = i; // ля-
+							matrix[_i][_j][2] = j; // ем
+							added = true; // Что-то добавили
+						}
+					}
+					_i = i - 1; _j = j;
+					// Если не вышли за пределы карты -  обрабатываем
+					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
+					{
+						// Если (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
+						if (matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2)
+						{
+							matrix[_i][_j][0] = step; // Добав-
+							matrix[_i][_j][1] = i; // ля-
+							matrix[_i][_j][2] = j; // ем
+							added = true; // Что-то добавили
+						}
+					}
+					_i = i; _j = j + 1;
+					// Если не вышли за пределы карты -  обрабатываем
+					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
+					{
+						// Если (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
+						if (matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2)
+						{
+							matrix[_i][_j][0] = step; // Добав-
+							matrix[_i][_j][1] = i; // ля-
+							matrix[_i][_j][2] = j; // ем
+							added = true; // Что-то добавили
+						}
+					}
+					_i = i; _j = j - 1;
+					// Если не вышли за пределы карты -  обрабатываем
+					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
+					{
+						// Если (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
+						if (matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2)
+						{
+							matrix[_i][_j][0] = step; // Добав-
+							matrix[_i][_j][1] = i; // ля-
+							matrix[_i][_j][2] = j; // ем
+							added = true; // Что-то добавили
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if (matrix[x][y][0] == -1)
+	{
+		result = false; // то пути не существует
+	}
+
+	if (result)
+	{
+		int _i = x, _j = y;
+		int li, lj;
+		while (matrix[_i][_j][0] != 0)
+		{
+			// тут ваш код где  записываем значение клеток и шагаем дальше к началу
+			// записывать надо _i _J	
+			way.push_back(Point2D(_i*scale, _j*scale));
+			li = matrix[_i][_j][1];
+			lj = matrix[_i][_j][2];
+			_i = li; _j = lj;
+		}
+	}
+
+	return way;
+}
+
+void MyStrategy::followWay(model::Move & _move)
+{
+	/*int lastWaypointIndex = way.size() - 1;
+	
+	Point2D lastWaypoint = way[lastWaypointIndex];
+	Point2D nextPoint = lastWaypoint;
+	for (int waypointIndex = 0; waypointIndex < lastWaypointIndex; ++waypointIndex) {
+		Point2D waypoint = way[waypointIndex];
+
+		if (waypoint.getDistanceTo(self) <= 20) {
+			nextPoint =  way[waypointIndex + 1];
+		}
+
+		if (lastWaypoint.getDistanceTo(waypoint) < lastWaypoint.getDistanceTo(self)) {
+			nextPoint = waypoint;
+		}
+	}*/
+	if (way.size()>3)
+		goToAdv(way[2], _move);
+	Point2D point = way[0];
+	double angle = self.getAngleTo(point.getX(), point.getY());
+
+	_move.setTurn(angle);
+
+	if (fabs(angle) < game.getWizardMaxTurnAngle())
+		_move.setSpeed(SPEED_BONUS_FACTOR + game.getWizardForwardSpeed());
 }
 
 void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Game& _game, Move& _move, const LivingUnit& enemy)
@@ -1096,12 +1312,17 @@ MyStrategy::MyStrategy() {
 	lastDodgeDir = 1;
 	
 	double mapSize = 4000;
-
-	myMap.resize(400);
-	for (auto &raw : myMap)
+	scale = 10;
+	for (unsigned int i = 0; i < (mapSize/scale); i++)
 	{
-		raw.assign(400, 0); // 0 - empty raw, -1 no way, value - distance to this point(if needed)
+		for (unsigned int j = 0; j < (mapSize / scale); j++)
+			myMap[i][j] = 0;
 	}
+	//myMap.resize(400);
+	//for (auto &raw : myMap)
+	//{
+	//	raw.assign(400, 0); // 0 - empty raw, -1 no way, value - distance to this point(if needed)
+	//}
 
 	lane = LaneType::_LANE_UNKNOWN_;
 	changeLaneTo = LaneType::_LANE_UNKNOWN_;

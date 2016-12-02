@@ -90,9 +90,12 @@ protected:
 	std::vector<Point2D> waypoints;
 
 	//////////////////////////////
-	std::vector<std::vector<int>> myMap;
+	//std::vector<std::vector<int>> myMap;
 	//////////////////////////
-
+	int scale;
+	int myMap[400][400];
+	int matrix[400][400][3]; //to find the way
+	std::vector<Point2D> way;
 	
 
 	model::Wizard self;
@@ -142,9 +145,11 @@ protected:
 	void dodgeFrom(const model::Wizard& _self, const model::World& _world, const model::Game& _game, model::Move& _move, const model::LivingUnit& enemy);
 	void setStrafe(model::Move& _move);
 	
-	void learnSkills(const model::Wizard& _self, model::Move& _move);
-	
-
+	void fillTheMap( const model::World& _world, const model::Game& _game);
+	void fillCircle( int x, int y, int r);
+	std::vector<Point2D> myWay(int x, int y, int x_to, int y_to);
+	void followWay(model::Move& _move);
+    void learnSkills(const model::Wizard& _self, model::Move& _move);
 	void setMessage(model::Move& _move);
 	void getMessage();
 
