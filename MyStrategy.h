@@ -121,6 +121,7 @@ protected:
 	Point2D getPreviousWaypoint();
 	
 	void goTo(const Point2D & point, model::Move& _move);
+	void goTo(const Point2D & point,const Point2D & lookAt, model::Move& _move);
 	void goToAdv(const Point2D & point, model::Move& _move);
 	void goBackwardTo(const Point2D & point, model::Move& _move);
 	void goBackwardToAdv(const Point2D & point, model::Move& _move);

@@ -67,60 +67,70 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		// не забавая атаковать врагов
 	case 0: break;
 	case 1:
-		if (d_wt < _self.getCastRange())
+		if (d_e < _self.getCastRange())
 		{
-			//attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+			attackEnemy(_self, _world, _game, _move, *closestEnemy);
 			if (self.getDistanceTo(1200, 1200) > self.getVisionRange() - 10)
-				goToAdv(Point2D(800, 800), _move);//Backward
+				goTo(Point2D(800, 800), Point2D(closestEnemy->getX(), closestEnemy->getY()), _move);;//Backward
 		}
 		else
 			goToAdv(Point2D(800, 800), _move);
 		return;
 	case 11:
-		if (d_wt < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
-			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+		if (d_e < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
+		{
+			attackEnemy(_self, _world, _game, _move, *closestEnemy);
+			goTo(Point2D(750, 300), Point2D(closestEnemy->getX(), closestEnemy->getY()), _move);
+		}
 		else
-			goBackwardToAdv(Point2D(750, 300), _move);
+			goToAdv(Point2D(750, 300), _move);
 		return;
 	case 21:	
-		if (d_wt < _self.getCastRange())
+		if (d_e < _self.getCastRange())
 		{
-			//attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+			attackEnemy(_self, _world, _game, _move, *closestEnemy);
 			if (self.getDistanceTo(1200, 1200) > self.getVisionRange() - 10)
-				goToAdv(Point2D(1400, 1750), _move); //Backward
+				goTo(Point2D(1400, 1750), Point2D(closestEnemy->getX(), closestEnemy->getY()), _move); //Backward
 		}
-		else goToAdv(Point2D(1600, 1600), _move);
+		else goToAdv(Point2D(1400, 1750), _move);
 		return;
 	case 22:
-		if (d_wt < _self.getCastRange())
+		if (d_e < _self.getCastRange())
 		{
-			//attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+			attackEnemy(_self, _world, _game, _move, *closestEnemy);
 			if (self.getDistanceTo(2800, 2800) > self.getVisionRange() - 10)
-				goToAdv(Point2D(2400, 2400), _move);//Backward
+				goTo(Point2D(2400, 2400), Point2D(closestEnemy->getX(), closestEnemy->getY()), _move);//Backward
 		}
 		else goToAdv(Point2D(2400, 2400), _move);
 		return;
 	case 23:
-		if (d_wt < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
-			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
-		goBackwardToAdv(Point2D(2000, 2000), _move); return;
-	case 3:
-		if (d_wt < _self.getCastRange())
+		if (d_e < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 		{
-			//attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+			attackEnemy(_self, _world, _game, _move, *closestEnemy);
+			goTo(Point2D(2000, 2000), Point2D(closestEnemy->getX(), closestEnemy->getY()), _move);
+		}
+		else goToAdv(Point2D(2000, 2000), _move); return;
+	case 3:
+		if (d_e < _self.getCastRange())
+		{
+			attackEnemy(_self, _world, _game, _move, *closestEnemy);
 			if (self.getDistanceTo(2800, 2800) > self.getVisionRange() - 10)
-				goToAdv(Point2D(3200, 3200), _move);//Backward
+				goTo(Point2D(3200, 3200), Point2D(closestEnemy->getX(), closestEnemy->getY()), _move);//Backward
 		}
 		else goToAdv(Point2D(3200, 3200), _move);
 		return;
 	case 31:
-		if (d_wt < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
-			attackEnemy(_self, _world, _game, _move, *weakestEnemy);
+		if (d_e < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
+			attackEnemy(_self, _world, _game, _move, *closestEnemy);
 		goToAdv(Point2D(3700, 750), _move); return; // Backward
 	case 41:
 		if (d_w < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
+		{
 			attackEnemy(_self, _world, _game, _move, *closestWizard);
-		goToAdv(Point2D(1200, 1200), _move);
+			goTo(Point2D(1200, 1200), Point2D(closestWizard->getX(), closestWizard->getY()), _move);
+		}
+		else
+			goToAdv(Point2D(1200, 1200), _move);		
 		return;
 	case 410:
 		return;
@@ -129,13 +139,16 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		return;
 	case 42:
 		if (d_w < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
+		{
 			attackEnemy(_self, _world, _game, _move, *closestWizard);
-		goToAdv(Point2D(2800, 2800), _move);
+			goTo(Point2D(2800, 2800), Point2D(closestWizard->getX(), closestWizard->getY()), _move);
+		}
+		else goToAdv(Point2D(2800, 2800), _move);
 		return;
 	case 420:
 		return;
 	case 421:
-		goBackwardFrom(Point2D(28200, 2800), _move);
+		goBackwardFrom(Point2D(2800, 2800), _move);
 		return;
 
 	default: break;
@@ -337,7 +350,30 @@ void MyStrategy::goTo(const Point2D & point, Move& _move)
 
 	if (fabs(angle) < game.getWizardMaxTurnAngle())
 		_move.setSpeed(SPEED_BONUS_FACTOR + game.getWizardForwardSpeed());
+}
 
+void MyStrategy::goTo(const Point2D & point, const Point2D & lookAt, Move& _move)
+{
+	if (self.getDistanceTo(point.getX(), point.getY()) < 10) return;
+	double angle = self.getAngleTo(lookAt.getX(), lookAt.getY());
+	_move.setTurn(angle);
+	if (angle > game.getWizardMaxTurnAngle()) return;
+
+	double angleToPoint = self.getAngleTo(point.getX(), point.getY());
+
+	if (angleToPoint > game.getWizardMaxTurnAngle())
+		_move.setStrafeSpeed(game.getWizardStrafeSpeed());
+	else if (angleToPoint < -game.getWizardMaxTurnAngle())
+	if (fabs(angle) < game.getWizardMaxTurnAngle())
+		_move.setStrafeSpeed(-game.getWizardStrafeSpeed());
+	else _move.setStrafeSpeed(0);
+
+	if (fabs(angleToPoint) < (PI / 4.0) - game.getWizardMaxTurnAngle())
+		_move.setSpeed(SPEED_BONUS_FACTOR + game.getWizardForwardSpeed());
+	else if (fabs(angleToPoint) > (PI / 4.0) + game.getWizardMaxTurnAngle())
+		_move.setSpeed(-SPEED_BONUS_FACTOR - game.getWizardForwardSpeed());
+	else
+		_move.setSpeed(0);
 }
 
 void MyStrategy::goBackwardTo(const Point2D & point, Move& _move)
@@ -811,7 +847,7 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 	}
 	else if (distance < self.getCastRange() - 50)
 	{
-		goBackwardTo(getPreviousWaypoint(), _move); //ADV?
+		goTo(getPreviousWaypoint(), Point2D(enemy.getX(), enemy.getY()), _move); //ADV?
 	}	
 	else dodgeFrom(_self, _world, _game, _move, enemy);
 }
@@ -896,7 +932,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 	//	goBackwardFrom(Point2D(enemy.getX(), enemy.getY()), _move);
 	else if (distance < self.getCastRange() - 50)
 	{
-		goBackwardTo(getPreviousWaypoint(), _move); //Adv?
+		goTo(getPreviousWaypoint(), Point2D(enemy.getX(), enemy.getY()) ,_move); //Adv?
 	}
 	else dodgeFrom(_self, _world, _game, _move, enemy);
 }
@@ -907,7 +943,10 @@ void MyStrategy::dodgeFrom(const model::Wizard & _self, const model::World & _wo
 	
 	if ((numOfLearnedSkills > 4) || (enemy.getRadius() != 35) || (self.getDistanceTo(enemy) < self.getCastRange() - 100))
 	{		
-		_move.setStrafeSpeed(lastDodgeDir * game.getWizardStrafeSpeed());		
+		double angle = self.getAngleTo(enemy);
+		_move.setTurn(angle);
+		if (angle < game.getWizardMaxTurnAngle())
+			_move.setStrafeSpeed(lastDodgeDir * (game.getWizardStrafeSpeed() + SPEED_BONUS_FACTOR));		
 		return;
 	}
 	Point2D point = Point2D(enemy.getX(), enemy.getY());
@@ -1055,10 +1094,10 @@ MyStrategy::MyStrategy() {
 	
 	double mapSize = 4000;
 
-	myMap.resize(4000);
+	myMap.resize(400);
 	for (auto &raw : myMap)
 	{
-		raw.assign(4000, 0); // 0 - empty raw, -1 no way, value - distance to this point(if needed)
+		raw.assign(400, 0); // 0 - empty raw, -1 no way, value - distance to this point(if needed)
 	}
 
 	lane = LaneType::_LANE_UNKNOWN_;
