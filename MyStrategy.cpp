@@ -168,7 +168,7 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		_move.setSpeed(0);
 		LivingUnit enemy = *closestEnemy;
 		
-		if (d_e < self.getRadius() + closestEnemy->getRadius() + 40)
+		if (d_e < self.getRadius() + closestEnemy->getRadius() + 200)
 		{
 			enemy = *closestEnemy;
 		}
@@ -230,7 +230,7 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 	//	random = new Random(game.getRandomSeed());
 
 
-	if (lane == LaneType::_LANE_UNKNOWN_)
+	/*if (lane == LaneType::_LANE_UNKNOWN_)
 		switch (static_cast<int>(_self.getId()))
 		{
 		case 1:
@@ -250,7 +250,8 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
 			lane = LaneType::LANE_BOTTOM;
 			break;
 		default: break;
-		}
+		}*/
+	lane = LaneType::LANE_MIDDLE; // будем ходить по центру
 
 	double distanceToLane = 6000;
 
@@ -357,11 +358,14 @@ void MyStrategy::goTo_wow(const Point2D & point, Move& _move)
 {
 	if (self.getDistanceTo(point.getX(), point.getY()) < 10) return;
 	
+	
 
 	if (pathFinfder)
-		if (self.getDistanceTo(point.getX(), point.getY()) < 500)
+	{
+		fillTheMap(); // заполняем карту видимыми объектами
+		
+		if (self.getDistanceTo(point.getX(), point.getY()) < 200)
 		{
-			fillTheMap(); // заполняем карту видимыми объектами
 			int X = int(self.getX() / scale);
 			int Y = int(self.getY() / scale);
 			int x_to = (point.getX()) / scale;
@@ -370,13 +374,13 @@ void MyStrategy::goTo_wow(const Point2D & point, Move& _move)
 			way = myWay(X, Y, x_to, y_to);
 			followWay(_move);
 		}
-		else 
+		else
 		{
 			double x1 = point.getX() - self.getX();
 			double y1 = point.getY() - self.getY();
 			double module = sqrt(x1*x1 + y1*y1);
-			x1 = x1* 500.0 / module;
-			y1 = y1* 500.0 / module;
+			x1 = x1* 200.0 / module;
+			y1 = y1* 200.0 / module;
 
 			int X = int(self.getX() / scale);
 			int Y = int(self.getY() / scale);
@@ -386,6 +390,7 @@ void MyStrategy::goTo_wow(const Point2D & point, Move& _move)
 			way = myWay(X, Y, x_to, y_to);
 			followWay(_move);
 		}
+	}
 	else goToAdv(point, _move);
 }
 
@@ -831,9 +836,9 @@ void MyStrategy::fillTheMap()
 		for (unsigned int j = 0; j < (mapSize / scale); j++)
 			myMap[i][j] = 0;
 	}
-	int X = 0;
-	int Y = 0;
-	int R = 0;
+	__int16 X = 0;
+	__int16 Y = 0;
+	__int16 R = 0;
 	for (auto &u : world.getBuildings())
 	{
 		X = static_cast<int>(u.getX() / scale);
@@ -867,9 +872,9 @@ void MyStrategy::fillTheMap()
 
 void MyStrategy::fillCircle(int x, int y, int r)
 {
-	myMap[x][y] = 1;
 	int size = 4000 / scale;
 	if (x >= size || y >= size || x + r >= size || y + r >= size || x - r < 0 || y - r < 0) return;
+	myMap[x][y] = 1;
 	for (int i = x - r; i < x + r; i++)
 		for (int j = y - r; j < y + r; j++)
 		{
@@ -1084,12 +1089,8 @@ void MyStrategy::followWay(model::Move & _move)
 		}
 	}*/
 	if (way.size() <= 1) return;
-	if (way.size()>3)
-		goToAdv(way[2], _move);
+		Point2D point = way[1];
 	
-	Point2D point = way[1];
-	
-
 	Tree tree = getClosestTree();
 	if (self.getAngleTo(tree) <  game.getStaffSector() / 2.0)
 	{
@@ -1097,7 +1098,7 @@ void MyStrategy::followWay(model::Move & _move)
 		_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
 		_move.setCastAngle(self.getAngleTo(tree));
 	}
-	goToAdv(point, _move);
+	goTo(point, _move);//goToAdv(point, _move);
 }
 
 void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Game& _game, Move& _move, const LivingUnit& enemy)
@@ -1415,7 +1416,7 @@ MyStrategy::MyStrategy() {
 
 	lastDodgeDir = 1;
 	
-	pathFinfder = true;
+	pathFinfder = false;
 	double mapSize = 4000;
 	scale = 40;
 	for (unsigned int i = 0; i < (mapSize/scale); i++)
