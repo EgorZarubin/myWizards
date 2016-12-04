@@ -94,8 +94,8 @@ protected:
 	//////////////////////////
 	bool pathFinfder;
 	int scale;
-	int myMap[400][400];
-	int matrix[400][400][4]; //to find the way
+	int myMap[100][100];
+	int matrix[100][100][4]; //to find the way
 	std::vector<Point2D> way;
 	
 

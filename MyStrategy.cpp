@@ -882,7 +882,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 {
 	way.clear();
 	// будем использовать арифметику целых чисел
-	const int size = 400;
+	const int size = 100;
 	int step;
 	
 	int presicion = 100;
@@ -1417,7 +1417,7 @@ MyStrategy::MyStrategy() {
 	
 	pathFinfder = true;
 	double mapSize = 4000;
-	scale = 10;
+	scale = 40;
 	for (unsigned int i = 0; i < (mapSize/scale); i++)
 	{
 		for (unsigned int j = 0; j < (mapSize / scale); j++)
