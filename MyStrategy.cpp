@@ -78,10 +78,10 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		if (d_e < _self.getCastRange() && _self.getRemainingActionCooldownTicks() == 0)
 		{
 			attackEnemy(_self, _world, _game, _move, *closestEnemy);
-			goTo(Point2D(750, 300), Point2D(closestEnemy->getX(), closestEnemy->getY()), _move);
+			goTo(Point2D(750, 300), Point2D(closestEnemy->getX(), closestEnemy->getY()), _move);			
 		}
 		else
-			goToAdv(Point2D(750, 300), _move);
+			goTo_wow(Point2D(750, 300), _move);//goToAdv(Point2D(750, 300), _move);
 		return;
 	case 21:	
 		if (d_e < _self.getCastRange())
@@ -90,7 +90,8 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 			if (self.getDistanceTo(1200, 1200) > self.getVisionRange() - 10)
 				goTo(Point2D(1400, 1750), Point2D(closestEnemy->getX(), closestEnemy->getY()), _move); //Backward
 		}
-		else goToAdv(Point2D(1400, 1750), _move);
+		else 
+			goTo_wow(Point2D(1400, 1750), _move);//goToAdv(Point2D(1400, 1750), _move);
 		return;
 	case 22:
 		if (d_e < _self.getCastRange())
@@ -157,7 +158,7 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	//если мало жизней- отбегаем назад (стоит ли?) и все
 	if (_self.getLife() < _self.getMaxLife() * LOW_HP_FACTOR && _self.getDistanceTo(0,0) > 500)
 	{
-		goToAdv(getPreviousWaypoint(), _move);
+		goTo_wow(getPreviousWaypoint(), _move);
 		return;
 	}
 	
@@ -352,6 +353,42 @@ void MyStrategy::goTo(const Point2D & point, Move& _move)
 		_move.setSpeed(SPEED_BONUS_FACTOR + game.getWizardForwardSpeed());
 }
 
+void MyStrategy::goTo_wow(const Point2D & point, Move& _move)
+{
+	if (self.getDistanceTo(point.getX(), point.getY()) < 10) return;
+	
+
+	if (pathFinfder)
+		if (self.getDistanceTo(point.getX(), point.getY()) < 500)
+		{
+			fillTheMap(); // заполняем карту видимыми объектами
+			int X = int(self.getX() / scale);
+			int Y = int(self.getY() / scale);
+			int x_to = (point.getX()) / scale;
+			int y_to = (point.getY()) / scale;
+
+			way = myWay(X, Y, x_to, y_to);
+			followWay(_move);
+		}
+		else 
+		{
+			double x1 = point.getX() - self.getX();
+			double y1 = point.getY() - self.getY();
+			double module = sqrt(x1*x1 + y1*y1);
+			x1 = x1* 500.0 / module;
+			y1 = y1* 500.0 / module;
+
+			int X = int(self.getX() / scale);
+			int Y = int(self.getY() / scale);
+			int x_to = X + x1 / scale;
+			int y_to = Y + y1 / scale;
+
+			way = myWay(X, Y, x_to, y_to);
+			followWay(_move);
+		}
+	else goToAdv(point, _move);
+}
+
 void MyStrategy::goTo(const Point2D & point, const Point2D & lookAt, Move& _move)
 {
 	if (self.getDistanceTo(point.getX(), point.getY()) < 10) return;
@@ -470,17 +507,10 @@ int MyStrategy::getCloseToBonus(model::Move & _move)
 		(world.getTickIndex() > 17500 && lastBonusCheck == 17500))
 		return 0;
 
-	if  (d < 1000) {
-		fillTheMap(); // заполняем карту видимыми объектами
-		int X = int(self.getX() / scale);
-		int Y = int(self.getY() / scale);
-		int x_to = (isFirstClosest ? 1200 : 2800) / scale;
-		int y_to = (isFirstClosest ? 1200 : 2800) / scale;
-
-		way = myWay(X, Y, x_to, y_to);
-		followWay(_move);
-		return 666;
-	}
+	//if  (pathFinfder && d < 1000) {			 
+	//	goTo_wow((isFirstClosest ? Point2D(1200, 1200) : Point2D(2800, 2800)), _move);		
+	//	return 666;
+	//}
 	
 	const double mapSize = game.getMapSize();
 	const double x = self.getX();
@@ -703,7 +733,7 @@ void MyStrategy::getTargets()
 	auto it = targets.begin();
 	while (it != targets.end() && ((*it)->getFaction() == self.getFaction() || 
 		  ((*it)->getDistanceTo(self) > self.getCastRange()  + (*it)->getRadius()) ||
-		   (*it)->getFaction() == Faction::FACTION_NEUTRAL)){
+		   ((*it)->getFaction() == Faction::FACTION_NEUTRAL) && (*it)->getLife() == (*it)->getMaxLife())){
 		it++;
 	}
 	if (it != targets.end())
@@ -711,7 +741,7 @@ void MyStrategy::getTargets()
 
 	for (auto &u : targets)
 	{
-		if (u->getFaction() != Faction::FACTION_NEUTRAL && u->getFaction() != self.getFaction())
+		if (u->getFaction() != Faction::FACTION_NEUTRAL && u->getFaction() != self.getFaction() || (u->getFaction() == Faction::FACTION_NEUTRAL && u->getLife() != u->getMaxLife()))
 		{
 			if (u->getDistanceTo(self) < minDist)
 			{
@@ -852,7 +882,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 {
 	way.clear();
 	// будем использовать арифметику целых чисел
-	const int size = 100;
+	const int size = 400;
 	int step;
 	
 	int presicion = 100;
@@ -870,9 +900,11 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 			{
 				matrix[i][j][0] = -1;// Мы еще нигде не были
 			}
+			matrix[i][j][3] = size*scale*sqrt(2);
 		}
 	}
 	matrix[x_to][y_to][0] = 0;// До финиша ноль шагов - от него будем разбегаться
+	matrix[x_to][y_to][3] = 0;// До финиша расстояние 0
 	step = 0; // Изначально мы сделали ноль шагов
 
 			  // Пока вершины добаляются и мы не дошли до старта
@@ -880,7 +912,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 	while (added && matrix[x][y][0] == -1)
 	{
 		added = false;// Пока что ничего не добавили
-		step += presicion;// Увеличиваем число шагов
+		step++;// Увеличиваем число шагов
 
 		for (int i = 0; i<size; i++)// Пробегаем по всей карте
 		{
@@ -888,20 +920,22 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 			{
 				// Если (i, j) была добавлена на предыдущем шаге
 				// Пробегаем по всем четырем сторонам
-				if (matrix[i][j][0] <= step - presicion) // <------------------
+				if (matrix[i][j][0] == step - 1) // <------------------
 				{
+					double distance = matrix[i][j][3];
 					int _i, _j;
 
 					_i = i + 1; _j = j;
 					// Если не вышли за пределы карты -  обрабатываем
 					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
 					{
-						// Если (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
-						if (matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2)
+						// Если (_i, _j) уже добавлено или непроходимо, или можно добраться быстрее то не обрабатываем 
+						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || matrix[_i][_j][2] > distance + presicion) 
 						{
 							matrix[_i][_j][0] = step; // Добав-
 							matrix[_i][_j][1] = i; // ля-
 							matrix[_i][_j][2] = j; // ем
+							matrix[_i][_j][2] = distance + presicion;
 							added = true; // Что-то добавили
 						}
 					}
@@ -910,11 +944,12 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
 					{
 						// Если (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
-						if (matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2)
+						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || matrix[_i][_j][2] > distance + presicion)
 						{
 							matrix[_i][_j][0] = step; // Добав-
 							matrix[_i][_j][1] = i; // ля-
 							matrix[_i][_j][2] = j; // ем
+							matrix[_i][_j][3] = distance + presicion;
 							added = true; // Что-то добавили
 						}
 					}
@@ -923,11 +958,12 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
 					{
 						// Если (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
-						if (matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2)
+						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || matrix[_i][_j][2] > distance + presicion)
 						{
 							matrix[_i][_j][0] = step; // Добав-
 							matrix[_i][_j][1] = i; // ля-
 							matrix[_i][_j][2] = j; // ем
+							matrix[_i][_j][3] = distance + presicion;
 							added = true; // Что-то добавили
 						}
 					}
@@ -936,11 +972,69 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
 					{
 						// Если (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
-						if (matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2)
+						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || matrix[_i][_j][2] > distance + presicion)
 						{
 							matrix[_i][_j][0] = step; // Добав-
 							matrix[_i][_j][1] = i; // ля-
 							matrix[_i][_j][2] = j; // ем
+							matrix[_i][_j][3] = distance + presicion;
+							added = true; // Что-то добавили
+						}
+					}
+					// Добавляем диагонали
+					_i = i + 1; _j = j + 1;
+					// Если не вышли за пределы карты -  обрабатываем
+					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
+					{
+						// Если (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
+						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || matrix[_i][_j][2] > distance + presicion*sqrt(2))
+						{
+							matrix[_i][_j][0] = step; // Добав-
+							matrix[_i][_j][1] = i; // ля-
+							matrix[_i][_j][2] = j; // ем
+							matrix[_i][_j][3] = distance + presicion * sqrt(2) ;
+							added = true; // Что-то добавили
+						}
+					}
+					_i = i - 1; _j = j + 1;
+					// Если не вышли за пределы карты -  обрабатываем
+					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
+					{
+						// Если (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
+						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || matrix[_i][_j][2] > distance + presicion*sqrt(2))
+						{
+							matrix[_i][_j][0] = step; // Добав-
+							matrix[_i][_j][1] = i; // ля-
+							matrix[_i][_j][2] = j; // ем
+							matrix[_i][_j][3] = distance + presicion * sqrt(2);
+							added = true; // Что-то добавили
+						}
+					}
+					_i = i + 1; _j = j - 1;
+					// Если не вышли за пределы карты -  обрабатываем
+					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
+					{
+						// Если (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
+						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || matrix[_i][_j][2] > distance + presicion*sqrt(2))
+						{
+							matrix[_i][_j][0] = step; // Добав-
+							matrix[_i][_j][1] = i; // ля-
+							matrix[_i][_j][2] = j; // ем
+							matrix[_i][_j][3] = distance + presicion * sqrt(2);
+							added = true; // Что-то добавили
+						}
+					}
+					_i = i - 1; _j = j - 1;
+					// Если не вышли за пределы карты -  обрабатываем
+					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
+					{
+						// Если (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
+						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || matrix[_i][_j][2] > distance + presicion*sqrt(2))
+						{
+							matrix[_i][_j][0] = step; // Добав-
+							matrix[_i][_j][1] = i; // ля-
+							matrix[_i][_j][2] = j; // ем
+							matrix[_i][_j][3] = distance + presicion * sqrt(2);
 							added = true; // Что-то добавили
 						}
 					}
@@ -1321,8 +1415,9 @@ MyStrategy::MyStrategy() {
 
 	lastDodgeDir = 1;
 	
+	pathFinfder = true;
 	double mapSize = 4000;
-	scale = 40;
+	scale = 10;
 	for (unsigned int i = 0; i < (mapSize/scale); i++)
 	{
 		for (unsigned int j = 0; j < (mapSize / scale); j++)

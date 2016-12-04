@@ -92,9 +92,10 @@ protected:
 	//////////////////////////////
 	//std::vector<std::vector<int>> myMap;
 	//////////////////////////
+	bool pathFinfder;
 	int scale;
-	int myMap[100][100];
-	int matrix[100][100][3]; //to find the way
+	int myMap[400][400];
+	int matrix[400][400][4]; //to find the way
 	std::vector<Point2D> way;
 	
 
@@ -127,6 +128,7 @@ protected:
 	Point2D getPreviousWaypoint();
 	
 	void goTo(const Point2D & point, model::Move& _move);
+	void goTo_wow(const Point2D & point, model::Move& _move);
 	void goTo(const Point2D & point,const Point2D & lookAt, model::Move& _move);
 	void goToAdv(const Point2D & point, model::Move& _move);
 	void goBackwardTo(const Point2D & point, model::Move& _move);
