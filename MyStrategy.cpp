@@ -224,12 +224,9 @@ void MyStrategy::clearValues()
 * ƒл€ этих целей обычно можно использовать конструктор, однако в данном случае мы хотим инициализировать генератор
 * случайных чисел значением, полученным от симул€тора игры.
 */
-void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game) {
-
-	//if (random == null) {
-	//	random = new Random(game.getRandomSeed());
-
-
+void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game)
+{
+	
 	/*if (lane == LaneType::_LANE_UNKNOWN_)
 		switch (static_cast<int>(_self.getId()))
 		{
@@ -325,7 +322,8 @@ void MyStrategy::initializeTick(const Wizard& _self, const World& _world, const 
 * ƒействие данного метода абсолютно идентично действию метода {@code getNextWaypoint}, если перевернуть массив
 * {@code waypoints}.
 */
-Point2D MyStrategy::getPreviousWaypoint() {
+Point2D MyStrategy::getPreviousWaypoint()
+{
 	Point2D firstWaypoint = waypoints[0];
 
 	for (int waypointIndex = waypoints.size() - 1; waypointIndex > 0; --waypointIndex) {
@@ -935,12 +933,12 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
 					{
 						// ≈сли (_i, _j) уже добавлено или непроходимо, или можно добратьс€ быстрее то не обрабатываем 
-						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || matrix[_i][_j][2] > distance + presicion) 
+						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || (matrix[_i][_j][3] > distance + presicion && matrix[_i][_j][0] != -2))
 						{
 							matrix[_i][_j][0] = step; // ƒобав-
 							matrix[_i][_j][1] = i; // л€-
 							matrix[_i][_j][2] = j; // ем
-							matrix[_i][_j][2] = distance + presicion;
+							matrix[_i][_j][3] = distance + presicion;
 							added = true; // „то-то добавили
 						}
 					}
@@ -949,7 +947,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
 					{
 						// ≈сли (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
-						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || matrix[_i][_j][2] > distance + presicion)
+						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || (matrix[_i][_j][3] > distance + presicion && matrix[_i][_j][0] != -2))
 						{
 							matrix[_i][_j][0] = step; // ƒобав-
 							matrix[_i][_j][1] = i; // л€-
@@ -963,7 +961,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
 					{
 						// ≈сли (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
-						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || matrix[_i][_j][2] > distance + presicion)
+						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || (matrix[_i][_j][3] > distance + presicion && matrix[_i][_j][0] != -2))
 						{
 							matrix[_i][_j][0] = step; // ƒобав-
 							matrix[_i][_j][1] = i; // л€-
@@ -977,7 +975,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
 					{
 						// ≈сли (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
-						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || matrix[_i][_j][2] > distance + presicion)
+						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || (matrix[_i][_j][3] > distance + presicion && matrix[_i][_j][0] != -2))
 						{
 							matrix[_i][_j][0] = step; // ƒобав-
 							matrix[_i][_j][1] = i; // л€-
@@ -992,7 +990,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
 					{
 						// ≈сли (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
-						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || matrix[_i][_j][2] > distance + presicion*sqrt(2))
+						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || (matrix[_i][_j][3] > distance + presicion*sqrt(2) && matrix[_i][_j][0] != -2))
 						{
 							matrix[_i][_j][0] = step; // ƒобав-
 							matrix[_i][_j][1] = i; // л€-
@@ -1006,7 +1004,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
 					{
 						// ≈сли (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
-						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || matrix[_i][_j][2] > distance + presicion*sqrt(2))
+						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || (matrix[_i][_j][3] > distance + presicion*sqrt(2) && matrix[_i][_j][0] != -2))
 						{
 							matrix[_i][_j][0] = step; // ƒобав-
 							matrix[_i][_j][1] = i; // л€-
@@ -1020,7 +1018,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
 					{
 						// ≈сли (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
-						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || matrix[_i][_j][2] > distance + presicion*sqrt(2))
+						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || (matrix[_i][_j][3] > distance + presicion*sqrt(2) && matrix[_i][_j][0] != -2))
 						{
 							matrix[_i][_j][0] = step; // ƒобав-
 							matrix[_i][_j][1] = i; // л€-
@@ -1034,7 +1032,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 					if (_i >= 0 && _j >= 0 && _i<size && _j<size)
 					{
 						// ≈сли (_i, _j) уже добавлено или непроходимо, то не обрабатываем 
-						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || matrix[_i][_j][2] > distance + presicion*sqrt(2))
+						if ((matrix[_i][_j][0] == -1 && matrix[_i][_j][0] != -2) || (matrix[_i][_j][3] > distance + presicion*sqrt(2) && matrix[_i][_j][0] != -2))
 						{
 							matrix[_i][_j][0] = step; // ƒобав-
 							matrix[_i][_j][1] = i; // л€-
@@ -1366,6 +1364,7 @@ void MyStrategy::setMessage(model::Move& _move)
 	messages.push_back(Message(LaneType::LANE_MIDDLE, SkillType::_SKILL_UNKNOWN_, std::vector<signed char>(0)));
 	messages.push_back(Message(LaneType::LANE_MIDDLE, SkillType::_SKILL_UNKNOWN_, std::vector<signed char>(0)));
 	messages.push_back(Message(LaneType::LANE_BOTTOM, SkillType::_SKILL_UNKNOWN_, std::vector<signed char>(0)));
+	_move.setMessages(messages);
 }
 
 void MyStrategy::getMessage()
@@ -1416,7 +1415,7 @@ MyStrategy::MyStrategy() {
 
 	lastDodgeDir = 1;
 	
-	pathFinfder = false;
+	pathFinfder = true;
 	double mapSize = 4000;
 	scale = 40;
 	for (unsigned int i = 0; i < (mapSize/scale); i++)
