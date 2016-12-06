@@ -12,7 +12,7 @@ using namespace std;
 
 /////////////////////////////////////////
 #ifndef localMachine
-#define localMachine
+//#define localMachine
 #endif
 
 #ifdef localMachine
@@ -34,7 +34,7 @@ ofstream mapAndPath;
 
 void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _game, Move& _move) {
 
-	if (_world.getTickIndex() < 300) return; //стратуем чуть чуть позже, чтобы сразу не помереть
+	if (_world.getTickIndex() < 100) return; //стратуем чуть чуть позже, чтобы сразу не помереть
 	clearValues();
 
 
@@ -182,7 +182,7 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		_move.setSpeed(0);
 		LivingUnit enemy = *closestEnemy;
 
-		if (d_e < self.getRadius() + closestEnemy->getRadius() + 200)
+		if (d_e < self.getRadius() + closestEnemy->getRadius() + 100)
 		{
 			enemy = *closestEnemy;
 		}
@@ -245,7 +245,7 @@ void MyStrategy::clearValues()
 */
 void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game)
 {
-	/*if (lane == LaneType::_LANE_UNKNOWN_)
+	if (lane == LaneType::_LANE_UNKNOWN_)
 		switch (static_cast<int>(_self.getId()))
 		{
 		case 1:
@@ -265,8 +265,8 @@ void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game)
 			lane = LaneType::LANE_BOTTOM;
 			break;
 		default: break;
-		}*/
-	lane = LaneType::LANE_MIDDLE; // будем ходить по центру
+		}
+	//lane = LaneType::LANE_MIDDLE; // будем ходить по центру
 
 	double distanceToLane = 6000;
 
@@ -796,7 +796,7 @@ void MyStrategy::getTargets()
 	auto it = targets.begin();
 	while (it != targets.end() && ((*it)->getFaction() == self.getFaction() || 
 		  ((*it)->getDistanceTo(self) > self.getCastRange()  + (*it)->getRadius()) ||
-		   ((*it)->getFaction() == Faction::FACTION_NEUTRAL) && (*it)->getSpeedX() == 0 && (*it)->getSpeedY() == 0)){
+		   ((*it)->getFaction() == Faction::FACTION_NEUTRAL) && (*it)->getSpeedX() == 0 && (*it)->getSpeedY() == 0) && (*it)->getLife() == (*it)->getMaxLife()){
 		it++;
 	}
 	if (it != targets.end())
@@ -1311,7 +1311,8 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 				lastDodgeDir *= -1;
 			}
 			else if ((numOfLearnedSkills > fireballSkill) && (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10) &&
-				(self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FIREBALL] == 0))
+				(self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FIREBALL] == 0) &&
+				distance > 300)
 			{
 				_move.setTurn(angle);
 				_move.setAction(ActionType::ACTION_FIREBALL);
@@ -1388,7 +1389,7 @@ void MyStrategy::goToAdv(const Point2D & point, model::Move & _move)
 	else if (self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1) // застряли хрен пойми почему
 	{
 		Tree tree = getClosestTree();
-		if (self.getDistanceTo(tree) < self.getRadius() + tree.getRadius() + 10)
+		if (self.getDistanceTo(tree) < self.getRadius() + tree.getRadius() + 1 && fabs(self.getAngleTo(tree))< PI/2)
 		{
 			goTo(Point2D(tree.getX(), tree.getY()), _move);
 			_move.setAction(ActionType::ACTION_STAFF);
@@ -1423,19 +1424,20 @@ void MyStrategy::learnSkills(const model::Wizard & _self, model::Move& _move)
 	case 3: skill = SkillType::SKILL_MAGICAL_DAMAGE_BONUS_AURA_2; break;
 	case 4: skill = SkillType::SKILL_FROST_BOLT; break;
 
-	//next
-	case 5:	skill = SkillType::SKILL_RANGE_BONUS_PASSIVE_1; break;
-	case 6: skill = SkillType::SKILL_RANGE_BONUS_AURA_1; break;
-	case 7: skill = SkillType::SKILL_RANGE_BONUS_PASSIVE_2; break;
-	case 8: skill = SkillType::SKILL_RANGE_BONUS_AURA_2; break;
-	case 9: skill = SkillType::SKILL_ADVANCED_MAGIC_MISSILE; break;
-
 	//next 
-	case 10: skill = SkillType::SKILL_STAFF_DAMAGE_BONUS_PASSIVE_1; break;
-	case 11: skill = SkillType::SKILL_STAFF_DAMAGE_BONUS_AURA_1; break;
-	case 12: skill = SkillType::SKILL_STAFF_DAMAGE_BONUS_PASSIVE_2; break;
-	case 13: skill = SkillType::SKILL_STAFF_DAMAGE_BONUS_AURA_2; break;
-	case 14: skill = SkillType::SKILL_FIREBALL; break;
+	case 5: skill = SkillType::SKILL_STAFF_DAMAGE_BONUS_PASSIVE_1; break;
+	case 6: skill = SkillType::SKILL_STAFF_DAMAGE_BONUS_AURA_1; break;
+	case 7: skill = SkillType::SKILL_STAFF_DAMAGE_BONUS_PASSIVE_2; break;
+	case 8: skill = SkillType::SKILL_STAFF_DAMAGE_BONUS_AURA_2; break;
+	case 9: skill = SkillType::SKILL_FIREBALL; break;
+
+	//next
+	case 10:	skill = SkillType::SKILL_RANGE_BONUS_PASSIVE_1; break;
+	case 11: skill = SkillType::SKILL_RANGE_BONUS_AURA_1; break;
+	case 12: skill = SkillType::SKILL_RANGE_BONUS_PASSIVE_2; break;
+	case 13: skill = SkillType::SKILL_RANGE_BONUS_AURA_2; break;
+	case 14: skill = SkillType::SKILL_ADVANCED_MAGIC_MISSILE; break;
+			
 	default:break;
 	}
 	numOfLearnedSkills = _self.getSkills().size();
@@ -1504,12 +1506,12 @@ MyStrategy::MyStrategy() {
 
 	// sequence for learning skills
 	frostBoltSkill = 4;
-	advancedMagicMissileSkill = 9;
-	fireballSkill = 14;
+	advancedMagicMissileSkill = 14;
+	fireballSkill = 9;
 
 
 	// bonus variables
-	underBonus = true;
+	underBonus = false;
 	bonus = Bonus();
 	bonusChecked = true;
 	lastBonusCheck = 0;
