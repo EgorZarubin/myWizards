@@ -16,6 +16,8 @@ using namespace std;
 #endif
 
 #ifdef localMachine
+#include <iostream>
+#include <fstream>
 ofstream mapAndPath;
 #endif
 ////////
@@ -217,10 +219,6 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		else 
 			goToAdv(posBeforeBonus, _move);
 
-	
-	//else if (testingStrategy && self.getDistanceTo(battlePoint.getX(), battlePoint.getY()) > self.getVisionRange())
-		//goTo_wow(battlePoint, _move);
-
 	else if (d_f > 400 && d_f < 6000 && closestFriend->getRadius() < 100)// бежим к друзь€м, если они далеко b и это не база // надо бы избегать деревьев
 		goTo_wow(Point2D(closestFriend->getX(), closestFriend->getY()), _move);//goToAdv(Point2D(closestFriend->getX(), closestFriend->getY()), _move);
 	else // ≈сли нет других действий, просто продвигаемс€ вперЄд.		
@@ -392,11 +390,9 @@ void MyStrategy::goTo_wow(const Point2D & point, Move& _move)
 {
 	if (self.getDistanceTo(point.getX(), point.getY()) < 10) return;
 	
-	
-
 	if (pathFinfder)
 	{
-		if (true)
+		if (false)
 		{
 #ifdef localMachine
 			mapAndPath.open("map.txt");
@@ -447,6 +443,8 @@ void MyStrategy::goTo_wow(const Point2D & point, Move& _move)
 			followWay(_move);
 		}
 	}
+
+
 	else goToAdv(point, _move);
 }
 
@@ -913,14 +911,14 @@ void MyStrategy::fillTheMap()
 	{
 		X = static_cast<int>(u.getX() / scale);
 		Y = static_cast<int>(u.getY() / scale);
-		R = (u.getRadius() + 45) / scale;
+		R = (u.getRadius() + 40) / scale;
 		fillCircle(X, Y, R);
 	}
 	for (auto &u : world.getWizards())
 	{
 		X = static_cast<int>(u.getX() / scale);
 		Y = static_cast<int>(u.getY() / scale);
-		R = (u.getRadius() + 50) / scale;
+		R = (u.getRadius() + 40) / scale;
 		if (!u.isMe())fillCircle(X, Y, R);
 		else myMap[X][Y] = 2;
 	}
@@ -928,7 +926,7 @@ void MyStrategy::fillTheMap()
 	{
 		X = static_cast<int>(u.getX() / scale);
 		Y = static_cast<int>(u.getY() / scale);
-		R = (u.getRadius() + 50) / scale;
+		R = (u.getRadius() + 40) / scale;
 		fillCircle(X, Y, R);
 
 	}
@@ -936,7 +934,7 @@ void MyStrategy::fillTheMap()
 	{
 		X = static_cast<int>(u.getX() / scale);
 		Y = static_cast<int>(u.getY() / scale);
-		R = (u.getRadius() + 45) / scale;
+		R = (u.getRadius() + 40) / scale;
 		fillCircle(X, Y, R);
 	}
 }
@@ -968,7 +966,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 	{
 		for (int j = 0; j<size; j++)
 		{
-			if (myMap[i][j] != 0 && myMap[i][j] == 2)
+			if (myMap[i][j] != 0 && myMap[i][j] != 2)
 			{
 				matrix[i][j][0] = -2;// зан€то
 			}
@@ -1254,7 +1252,7 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 			_move.setTurn(angle);
 		else dodgeFrom(_self, _world, _game, _move, enemy);
 	}
-	else if (distance < self.getCastRange() - 50)
+	else if (distance < self.getCastRange())
 	{
 		goTo(getPreviousWaypoint(), Point2D(enemy.getX(), enemy.getY()), _move); //ADV?
 	}	
@@ -1272,7 +1270,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 		double tRocket = distance / game.getMagicMissileSpeed();
 		Point2D enemyPrediction(enemy.getX(), enemy.getY());
 		if (enemy.getAngleTo(self) > PI / 4 && (enemy.getSpeedX() > 0 || enemy.getSpeedY() > 0))
-			enemyPrediction = enemyPrediction + Point2D(+enemy.getSpeedX()*tRocket, enemy.getSpeedY()*tRocket);
+			enemyPrediction = enemyPrediction + Point2D(enemy.getSpeedX()*tRocket, enemy.getSpeedY()*tRocket);
 		angle = _self.getAngleTo(enemyPrediction.getX(), enemyPrediction.getY());
 	}
 
@@ -1339,7 +1337,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 	}
 	//else if (distance < 100)
 	//	goBackwardFrom(Point2D(enemy.getX(), enemy.getY()), _move);
-	else if (distance < self.getCastRange() - 50)
+	else if (distance < self.getCastRange())
 	{
 		goTo(getPreviousWaypoint(), Point2D(enemy.getX(), enemy.getY()) ,_move); //Adv?
 	}
@@ -1525,7 +1523,7 @@ MyStrategy::MyStrategy() {
 	lastDodgeDir = 1; // direction to avoif rockets
 
 
-	pathFinfder = true; // activale advanced path searcing
+	pathFinfder = false; // activale advanced path searcing
 	double mapSize = 4000;
 	scale = 10;
 	for (unsigned int i = 0; i < (mapSize / scale); i++)
@@ -1534,7 +1532,7 @@ MyStrategy::MyStrategy() {
 			myMap[i][j] = 0;
 	}
 
-	testingStrategy = true; // activate battle points detection
+	testingStrategy = false; // activate battle points detection
 	// priority of battle points
 	__int16 battlefield[10][10] = {
 		{ 2, 2, 3, 3, 4, 4, 5, 5, 5, 5 },
