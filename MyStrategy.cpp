@@ -10,6 +10,16 @@
 using namespace model;
 using namespace std;
 
+/////////////////////////////////////////
+#ifndef localMachine
+#define localMachine
+#endif
+
+#ifdef localMachine
+ofstream mapAndPath;
+#endif
+////////
+ 
 
 // улучшить уклонение 
 // предсказывать положение врагов +-
@@ -54,7 +64,9 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	if (getBonus(_move)) return;	
 	
 	//распределяем цели по типам: слабые, ближние, волшебники, миньоны
-	getTargets();	
+	getTargets();
+
+	getBattleField();
 	
 	//если время близко к бонусу, надо его взять
 	int closeToBonus = getCloseToBonus(_move);  // определяем близость к бонусу и сектор
@@ -164,32 +176,32 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	
 	// приоритет атаки. сейчас это: совсем близкие чуваки, волшебники, самые слабые типы, башни, миньоны
 	if (d_e < _self.getCastRange()) //если хоть кто то в пределах досягаемости
-	{		
+	{
 		_move.setSpeed(0);
 		LivingUnit enemy = *closestEnemy;
-		
+
 		if (d_e < self.getRadius() + closestEnemy->getRadius() + 200)
 		{
 			enemy = *closestEnemy;
 		}
-		else if (d_w < _self.getCastRange() + game.getWizardRadius()) 
+		else if (d_w < _self.getCastRange() + game.getWizardRadius())
 		{
 			enemy = *closestWizard;//
-		}		
-		else if(d_b < _self.getCastRange() + game.getGuardianTowerRadius())
+		}
+		else if (d_b < _self.getCastRange() + game.getGuardianTowerRadius())
 		{
 			enemy = *closestBuilding;//
 		}
 		else if (d_wt < _self.getCastRange() + weakestEnemy->getRadius())
 		{
 			enemy = *weakestEnemy;//
-		}			
+		}
 		else if (d_m < _self.getCastRange() + game.getMinionRadius())
 		{
 			enemy = *closestMinion;//
 		}
-				
-		attackEnemy(_self, _world, _game, _move, enemy);		
+
+		attackEnemy(_self, _world, _game, _move, enemy);
 		return;
 	}
 
@@ -200,11 +212,17 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 		goToAdv(Point2D(closestEnemy->getX(), closestEnemy->getY()), _move);
 
 	else if (returnToLastPos)
-		goToAdv(posBeforeBonus, _move);
+		if (testingStrategy && self.getDistanceTo(battlePoint.getX(), battlePoint.getY()) > self.getVisionRange())
+			goTo_wow(battlePoint, _move);
+		else 
+			goToAdv(posBeforeBonus, _move);
+
+	
+	//else if (testingStrategy && self.getDistanceTo(battlePoint.getX(), battlePoint.getY()) > self.getVisionRange())
+		//goTo_wow(battlePoint, _move);
 
 	else if (d_f > 400 && d_f < 6000 && closestFriend->getRadius() < 100)// бежим к друзьям, если они далеко b и это не база // надо бы избегать деревьев
-		goToAdv(Point2D(closestFriend->getX(), closestFriend->getY()), _move);
-	
+		goTo_wow(Point2D(closestFriend->getX(), closestFriend->getY()), _move);//goToAdv(Point2D(closestFriend->getX(), closestFriend->getY()), _move);
 	else // Если нет других действий, просто продвигаемся вперёд.		
 		goToAdv(getNextWaypoint(), _move);	
 	return;
@@ -216,6 +234,9 @@ void MyStrategy::clearValues()
 	d_f = d_e = d_w = d_b = d_m = d_wt = d_n = 6000;
 	if (underBonus && world.getTickIndex() - lastBonusCheck > 2400)
 		underBonus = false;
+	for (int i = 0; i < 10; i++)
+		for (int j = 0; j < 10; j++)
+			isBattle[i][j] = false;
 }
 
 /**
@@ -226,7 +247,6 @@ void MyStrategy::clearValues()
 */
 void MyStrategy::initializeStrategy(const Wizard& _self, const Game& _game)
 {
-	
 	/*if (lane == LaneType::_LANE_UNKNOWN_)
 		switch (static_cast<int>(_self.getId()))
 		{
@@ -341,6 +361,22 @@ Point2D MyStrategy::getPreviousWaypoint()
 	return firstWaypoint;
 }
 
+void MyStrategy::getBattleField()
+{
+	battlePoint = Point2D(self.getX(), self.getY());
+	double value = 0.0;
+	for (int i = 0; i < 10; i++)
+		for (int j = 0; j < 10; j++)
+		{
+			if (isBattle[i][j])
+				if (isBattle[i][j] && value < BattleFieldPriority[i][j] / self.getDistanceTo(i * 800, j * 800))
+				{
+					value = BattleFieldPriority[i][j] / self.getDistanceTo(i * 400, j * 400);
+					battlePoint = Point2D(i * 400 + 200, j * 400 + 200);
+				}
+		}
+}
+
 void MyStrategy::goTo(const Point2D & point, Move& _move)
 {
 	if (self.getDistanceTo(point.getX(), point.getY()) < 10) return;
@@ -360,9 +396,29 @@ void MyStrategy::goTo_wow(const Point2D & point, Move& _move)
 
 	if (pathFinfder)
 	{
-		fillTheMap(); // заполняем карту видимыми объектами
-		
-		if (self.getDistanceTo(point.getX(), point.getY()) < 200)
+		if (true)
+		{
+#ifdef localMachine
+			mapAndPath.open("map.txt");
+#endif
+			fillTheMap(); // заполняем карту видимыми объектами
+#ifdef localMachine
+			for (int i = 0; i < 4000 / scale; i++)
+			{
+				for (int j = 0; j < 4000 / scale; j++)
+					if (myMap[j][i] == 0)
+						mapAndPath << 0;
+					else if (myMap[j][i] == 2)
+						mapAndPath << "#";
+					else
+						mapAndPath << "*";
+				mapAndPath << endl;
+			}
+			mapAndPath.close();
+#endif
+		}
+
+		if (/*self.getDistanceTo(point.getX(), point.getY()) < 500*/ true)
 		{
 			int X = int(self.getX() / scale);
 			int Y = int(self.getY() / scale);
@@ -370,6 +426,7 @@ void MyStrategy::goTo_wow(const Point2D & point, Move& _move)
 			int y_to = (point.getY()) / scale;
 
 			way = myWay(X, Y, x_to, y_to);
+			if (way.size() <= 5) goToAdv(point, _move);
 			followWay(_move);
 		}
 		else
@@ -377,8 +434,8 @@ void MyStrategy::goTo_wow(const Point2D & point, Move& _move)
 			double x1 = point.getX() - self.getX();
 			double y1 = point.getY() - self.getY();
 			double module = sqrt(x1*x1 + y1*y1);
-			x1 = x1* 200.0 / module;
-			y1 = y1* 200.0 / module;
+			x1 = x1* 500.0 / module;
+			y1 = y1* 500.0 / module;
 
 			int X = int(self.getX() / scale);
 			int Y = int(self.getY() / scale);
@@ -386,6 +443,7 @@ void MyStrategy::goTo_wow(const Point2D & point, Move& _move)
 			int y_to = Y + y1 / scale;
 
 			way = myWay(X, Y, x_to, y_to);
+			if (way.size() <= 5) goToAdv(point, _move);
 			followWay(_move);
 		}
 	}
@@ -482,7 +540,7 @@ void MyStrategy::goTangentialFrom(const Point2D & point, const Point2D & nextPoi
 	_move.setStrafeSpeed(0);
 	double angle = fabs(angle1) < fabs(angle2)? angle1 : angle2;
 	
-	if (fabs(angle - angle3) < game.getWizardMaxTurnAngle()) // иначе выйдем на орбиту
+	if (fabs(angle - angle3) < 1e-10) // иначе выйдем на орбиту
 	{
 		_move.setTurn(angle3);
 		angle = angle3;
@@ -497,6 +555,8 @@ void MyStrategy::goTangentialFrom(const Point2D & point, const Point2D & nextPoi
 
 int MyStrategy::getCloseToBonus(model::Move & _move)
 { 	
+	if (d_b < self.getCastRange() + 50) return 0; //если атакуем здание - никуда не рыпаемся
+
 	Point2D p1(1200, 1200);
 	Point2D p2(2800, 2800);
 	double d1 = self.getDistanceTo(1200, 1200);
@@ -510,10 +570,10 @@ int MyStrategy::getCloseToBonus(model::Move & _move)
 		(world.getTickIndex() > 17500 && lastBonusCheck == 17500))
 		return 0;
 
-	//if  (pathFinfder && d < 1000) {			 
-	//	goTo_wow((isFirstClosest ? Point2D(1200, 1200) : Point2D(2800, 2800)), _move);		
-	//	return 666;
-	//}
+	if  (pathFinfder && d < 1000) {			 
+		goTo_wow((isFirstClosest ? Point2D(1200, 1200) : Point2D(2800, 2800)), _move);		
+		return 666;
+	}
 	
 	const double mapSize = game.getMapSize();
 	const double x = self.getX();
@@ -540,7 +600,7 @@ int MyStrategy::getCloseToBonus(model::Move & _move)
 
 	if (abs(x - y) < 300 && (x < mapSize - y) && x > mapSize - y - 1000) return 21;
 	if (abs(x - y) < 300 && (x > mapSize - y) && x < mapSize - y + 1000) return 22;
-	if (x > 2000 && x < 3000 && fabs(x + y - mapSize)< 300) return 23;
+	if (x > 2000 && x < 2500 && fabs(x + y - mapSize)< 300) return 23;
 	
     //	держимся ближе к бонусу	 
 	return 0;
@@ -574,6 +634,7 @@ bool MyStrategy::getBonus(model::Move & _move)
 	
 		shared_ptr<LivingUnit> enemy;
 		if (fabs(self.getX() - self.getY()) < 400 && (d1 < 800 || d2 < 800))
+		{
 			if (d1 < d2)
 			{
 				for (auto & i : bonuses)
@@ -584,7 +645,7 @@ bool MyStrategy::getBonus(model::Move & _move)
 							changeLaneTo = LaneType::LANE_TOP;
 							posBeforeBonus = Point2D(800, 800); // so hardcoded
 						}
-						else 
+						else
 							posBeforeBonus = Point2D(800, 800); // so hardcoded
 
 						if ((d_e < 80) && (fabs(fabs(self.getAngleTo(mapSize*0.3, mapSize*0.3) - PI) < game.getStaffSector()))) //если враг близко и бонус с другой стороны
@@ -601,11 +662,11 @@ bool MyStrategy::getBonus(model::Move & _move)
 						}
 						//атакуем, если видим вражеского волшебника
 						if (self.getRemainingActionCooldownTicks() == 0 && e_d < self.getCastRange() && fabs(self.getAngleTo(*enemy)) < game.getStaffSector() / 2.0)
-						{	
+						{
 							//setStrafe(_move);
 							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 70)
 								_move.setAction(ActionType::ACTION_STAFF);
-							else if ( isSkillsEnable && numOfLearnedSkills > frostBoltSkill && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
+							else if (isSkillsEnable && numOfLearnedSkills > frostBoltSkill && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
 							{
 								_move.setAction(ActionType::ACTION_FROST_BOLT);
 								_move.setCastAngle(self.getAngleTo(*enemy));
@@ -624,7 +685,7 @@ bool MyStrategy::getBonus(model::Move & _move)
 								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getMagicMissileRadius());
 							}
 						}
-							return true;
+						return true;
 					}
 			}
 			else
@@ -633,7 +694,7 @@ bool MyStrategy::getBonus(model::Move & _move)
 					if (fabs(self.getDistanceTo(i) - d2) < 50) // если это тот бонус, который ближний
 					{
 						if (lane == LaneType::LANE_MIDDLE)
-						{							
+						{
 							posBeforeBonus = Point2D(2400, 2400); // so hardcoded
 						}
 						else
@@ -679,7 +740,12 @@ bool MyStrategy::getBonus(model::Move & _move)
 						}
 						return true;
 					}
-			}		
+			}
+		}
+		else if( d1 < 800 ) // идем через лес
+			goTo_wow(Point2D(1200,1200),_move);
+		else if (d2 < 800) // идем через лес
+			goTo_wow(Point2D(2800,2800), _move);
 	}
 	else if ( (d1 < self.getVisionRange() - 10 || d2 < self.getVisionRange() - 10) && world.getTickIndex() - lastBonusCheck > game.getBonusAppearanceIntervalTicks())
 	{
@@ -699,11 +765,7 @@ void MyStrategy::getTargets()
 	closestMinion = nullptr;
 	weakestEnemy = nullptr;
 	closestNeutral = nullptr;
-
-	//LivingUnit * unit = nullptr;
-	//Building * b = nullptr;
-	//if (world.getBuildings().size() != 0)
-	//	unit = static_cast<LivingUnit*> (&(world.getBuildings()[0]));
+	
 
 	std::vector<shared_ptr<LivingUnit>> targets;
 	for (unsigned int i = 0; i < world.getBuildings().size(); i++)
@@ -736,7 +798,7 @@ void MyStrategy::getTargets()
 	auto it = targets.begin();
 	while (it != targets.end() && ((*it)->getFaction() == self.getFaction() || 
 		  ((*it)->getDistanceTo(self) > self.getCastRange()  + (*it)->getRadius()) ||
-		   ((*it)->getFaction() == Faction::FACTION_NEUTRAL) && (*it)->getLife() == (*it)->getMaxLife())){
+		   ((*it)->getFaction() == Faction::FACTION_NEUTRAL) && (*it)->getSpeedX() == 0 && (*it)->getSpeedY() == 0)){
 		it++;
 	}
 	if (it != targets.end())
@@ -744,7 +806,8 @@ void MyStrategy::getTargets()
 
 	for (auto &u : targets)
 	{
-		if (u->getFaction() != Faction::FACTION_NEUTRAL && u->getFaction() != self.getFaction() || (u->getFaction() == Faction::FACTION_NEUTRAL && u->getLife() != u->getMaxLife()))
+		if ( u->getFaction() != Faction::FACTION_NEUTRAL && u->getFaction() != self.getFaction() ||
+		    (u->getFaction() == Faction::FACTION_NEUTRAL && ( u->getLife() != u->getMaxLife() || u->getSpeedX() != 0 || u->getSpeedY() != 0)))
 		{
 			if (u->getDistanceTo(self) < minDist)
 			{
@@ -767,6 +830,11 @@ void MyStrategy::getTargets()
 				minDist_m = u->getDistanceTo(self);
 				closestMinion = u;
 			}
+
+			__int16 x = int(u->getX() / 400);
+			__int16 y = int(u->getY() / 400);
+			if (x >= 0 && y >= 0 && x < 10 && y < 10)
+				isBattle[x][y] = true;
 		}
 		else if (u->getFaction() == self.getFaction() && u->getId() != self.getId())
 		{
@@ -832,8 +900,12 @@ void MyStrategy::fillTheMap()
 	for (unsigned int i = 0; i < (mapSize / scale); i++)
 	{
 		for (unsigned int j = 0; j < (mapSize / scale); j++)
-			myMap[i][j] = 0;
+			if (i<35/scale || j<35/scale || i> (mapSize - 35) / scale || j> (mapSize - 35) / scale)
+				myMap[i][j] = 1;
+			else 
+				myMap[i][j] = 0;
 	}
+
 	__int16 X = 0;
 	__int16 Y = 0;
 	__int16 R = 0;
@@ -848,14 +920,15 @@ void MyStrategy::fillTheMap()
 	{
 		X = static_cast<int>(u.getX() / scale);
 		Y = static_cast<int>(u.getY() / scale);
-		R = (u.getRadius() + 45) / scale;
+		R = (u.getRadius() + 50) / scale;
 		if (!u.isMe())fillCircle(X, Y, R);
+		else myMap[X][Y] = 2;
 	}
 	for (auto &u : world.getMinions())
 	{
 		X = static_cast<int>(u.getX() / scale);
 		Y = static_cast<int>(u.getY() / scale);
-		R = (u.getRadius() + 45) / scale;
+		R = (u.getRadius() + 50) / scale;
 		fillCircle(X, Y, R);
 
 	}
@@ -885,7 +958,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 {
 	way.clear();
 	// будем использовать арифметику целых чисел
-	const int size = 100;
+	const int size = 400;
 	int step;
 	
 	int presicion = 100;
@@ -895,7 +968,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 	{
 		for (int j = 0; j<size; j++)
 		{
-			if (myMap[i][j] != 0)
+			if (myMap[i][j] != 0 && myMap[i][j] == 2)
 			{
 				matrix[i][j][0] = -2;// занято
 			}
@@ -912,7 +985,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 
 			  // Пока вершины добаляются и мы не дошли до старта
 
-	while (added && matrix[x][y][0] == -1)
+	while (added && matrix[x][y][0] == -1 && step < 1000)
 	{
 		added = false;// Пока что ничего не добавили
 		step++;// Увеличиваем число шагов
@@ -1055,7 +1128,7 @@ std::vector<Point2D> MyStrategy::myWay(int x, int y, int x_to, int y_to)
 	{
 		int _i = x, _j = y;
 		int li, lj;
-		while (matrix[_i][_j][0] != 0)
+		while (way.size() < 1000 && _i > 0 && _i < size && _j >0 && _j < size && matrix[_i][_j][0] != 0)
 		{
 			// тут ваш код где  записываем значение клеток и шагаем дальше к началу
 			// записывать надо _i _J	
@@ -1086,17 +1159,34 @@ void MyStrategy::followWay(model::Move & _move)
 			nextPoint = waypoint;
 		}
 	}*/
-	if (way.size() <= 1) return;
-		Point2D point = way[1];
 	
+	
+	//if (self.getDistanceTo(point.getX(), point.getY()) < 10)
+	//		point = way[2];
+
+	//прорубаем путь
 	Tree tree = getClosestTree();
-	if (self.getAngleTo(tree) <  game.getStaffSector() / 2.0)
+	if (fabs(self.getAngleTo(tree)) <  game.getStaffSector() / 2.0 && self.getDistanceTo(tree) < self.getCastRange())
 	{
-		goTo(Point2D(tree.getX(), tree.getY()), _move);
 		_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
 		_move.setCastAngle(self.getAngleTo(tree));
 	}
-	goTo(point, _move);//goToAdv(point, _move);
+
+	if (way.size() < 5) return;
+	int i = 4;
+	Point2D point = way[4];
+	double d = self.getDistanceTo(point.getX(), point.getY());
+	while  (way.size() < i+1 && ( d < 10) )
+	{	
+		i++;	
+		point = way[i];
+		
+		//_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
+		//return;
+	}
+	//Point2D point = way[4];
+
+	goToAdv(point, _move);//goToAdv(point, _move);
 }
 
 void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Game& _game, Move& _move, const LivingUnit& enemy)
@@ -1286,7 +1376,8 @@ void MyStrategy::dodgeFrom(const model::Wizard & _self, const model::World & _wo
 void MyStrategy::goToAdv(const Point2D & point, model::Move & _move)
 {
 	if (self.getDistanceTo(point.getX(), point.getY()) < 10) return;
-
+	if (d_e < 150)
+		goTo(point, Point2D(closestEnemy->getX(), closestEnemy->getY()),_move);
 
 	if ((self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1) && (d_f <= self.getRadius() + closestFriend->getRadius() + 10)) //застряли изза друга - обойдем его
 	{
@@ -1384,51 +1475,84 @@ void MyStrategy::getMessage()
 	}
 }
 
+void MyStrategy::StrategyItself()
+{	
+	Point2D point = Point2D(self.getX(), self.getY());
+	double value;
+	for (int i = 0; i < 10; i++)
+		for (int j = 0; j < 10; j++)
+		{
+			if (isBattle[i][j])
+				if (isBattle[i][j] && value > BattleFieldPriority[i][j] / self.getDistanceTo(i * 800, j * 800))
+				{
+					value = BattleFieldPriority[i][j] / self.getDistanceTo(i * 400, j * 400);
+					point = Point2D(i * 400, j * 400);
+				}
+		}
+}
+
 MyStrategy::MyStrategy() {
 
 	WAYPOINT_RADIUS = 100.0;
-	LOW_HP_FACTOR = 0.25;	
+	LOW_HP_FACTOR = 0.25;
 	SPEED_BONUS_FACTOR = 0.0;
 	ALLOW_PREDICTION = true;
 
+	// skills options
 	isSkillsEnable = false;
 	numOfLearnedSkills = 0;
 	nextSkill = 0;
 	skillToLearn = SkillType::_SKILL_UNKNOWN_;
 
+	// sequence for learning skills
 	frostBoltSkill = 4;
 	advancedMagicMissileSkill = 9;
 	fireballSkill = 14;
 
-	
-	
+
+	// bonus variables
 	underBonus = true;
 	bonus = Bonus();
-	bonusChecked = true;	
+	bonusChecked = true;
 	lastBonusCheck = 0;
-	
-	returnToLastPos = true;	
+
+	returnToLastPos = true;
 
 	STRAFE_FACTOR = 5;
 	strafeTicks = 0;
 	lastStrafeDirection = 0;
 
-	lastDodgeDir = 1;
-	
-	pathFinfder = true;
+	lastDodgeDir = 1; // direction to avoif rockets
+
+
+	pathFinfder = true; // activale advanced path searcing
 	double mapSize = 4000;
-	scale = 40;
-	for (unsigned int i = 0; i < (mapSize/scale); i++)
+	scale = 10;
+	for (unsigned int i = 0; i < (mapSize / scale); i++)
 	{
 		for (unsigned int j = 0; j < (mapSize / scale); j++)
 			myMap[i][j] = 0;
 	}
-	//myMap.resize(400);
-	//for (auto &raw : myMap)
-	//{
-	//	raw.assign(400, 0); // 0 - empty raw, -1 no way, value - distance to this point(if needed)
-	//}
 
+	testingStrategy = true; // activate battle points detection
+	// priority of battle points
+	__int16 battlefield[10][10] = {
+		{ 2, 2, 3, 3, 4, 4, 5, 5, 5, 5 },
+		{ 2, 2, 3, 3, 4, 4, 4, 4, 5, 5 },
+		{ 3, 1, 1, 1, 1, 1, 4, 5, 4, 5 },
+		{ 3, 2, 1, 1, 1, 1, 4, 4, 4, 5 },
+		{ 4, 3, 1, 1, 2, 3, 1, 1, 4, 4 },
+		{ 4, 4, 1, 2, 3, 2, 1, 1, 4, 4 },
+		{ 5, 4, 4, 4, 2, 1, 1, 1, 3, 3 },
+		{ 5, 5, 5, 4, 1, 1, 1, 1, 3, 3 },
+		{ 5, 5, 5, 4, 4, 3, 2, 1, 2, 2 },
+		{ 5, 5, 5, 5, 4, 4, 3, 3, 2, 2 }
+	};
+	for (int i = 0; i < 10; i++)
+		for (int j = 0; j < 10; j++)
+			BattleFieldPriority[i][j] = battlefield[i][j];
+
+	// initialize waypoints
 	lane = LaneType::_LANE_UNKNOWN_;
 	changeLaneTo = LaneType::_LANE_UNKNOWN_;
 

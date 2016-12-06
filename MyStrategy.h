@@ -94,10 +94,15 @@ protected:
 	//////////////////////////
 	bool pathFinfder;
 	int scale;
-	unsigned __int16 myMap[100][100];
-	__int16 matrix[100][100][4]; //to find the way
+	unsigned __int16 myMap[400][400];
+	__int16 matrix[400][400][4]; //to find the way
 	std::vector<Point2D> way;
 	
+	//strategy
+	bool testingStrategy;
+	bool isBattle[10][10];
+	__int16 BattleFieldPriority[10][10];
+	Point2D battlePoint;
 
 	model::Wizard self;
 	model::World world;
@@ -126,7 +131,8 @@ protected:
 	void initializeTick(const model::Wizard& _self, const model::World& _world, const model::Game& _game, const model::Move& _move);
 	Point2D getNextWaypoint();
 	Point2D getPreviousWaypoint();
-	
+	void getBattleField();
+
 	void goTo(const Point2D & point, model::Move& _move);
 	void goTo_wow(const Point2D & point, model::Move& _move);
 	void goTo(const Point2D & point,const Point2D & lookAt, model::Move& _move);
@@ -154,6 +160,8 @@ protected:
     void learnSkills(const model::Wizard& _self, model::Move& _move);
 	void setMessage(model::Move& _move);
 	void getMessage();
+
+	void StrategyItself();
 
 public:
     MyStrategy();
