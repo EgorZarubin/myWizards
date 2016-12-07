@@ -177,28 +177,28 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	}
 	
 	// приоритет атаки. сейчас это: совсем близкие чуваки, волшебники, самые слабые типы, башни, миньоны
-	if (d_e < _self.getCastRange()) //если хоть кто то в пределах досягаемости
+	if (d_e < _self.getCastRange() + game.getMagicMissileRadius()) //если хоть кто то в пределах досягаемости
 	{
 		_move.setSpeed(0);
 		LivingUnit enemy = *closestEnemy;
 
-		if (d_e < self.getRadius() + closestEnemy->getRadius() + 100)
+		if (d_e < self.getRadius() + 100)
 		{
 			enemy = *closestEnemy;
 		}
-		else if (d_w < _self.getCastRange() + game.getWizardRadius())
+		else if (d_w < _self.getCastRange())
 		{
 			enemy = *closestWizard;//
 		}
-		else if (d_b < _self.getCastRange() + game.getGuardianTowerRadius())
+		else if (d_b < _self.getCastRange())
 		{
 			enemy = *closestBuilding;//
 		}
-		else if (d_wt < _self.getCastRange() + weakestEnemy->getRadius())
+		else if (d_wt < _self.getCastRange())
 		{
 			enemy = *weakestEnemy;//
 		}
-		else if (d_m < _self.getCastRange() + game.getMinionRadius())
+		else if (d_m < _self.getCastRange())
 		{
 			enemy = *closestMinion;//
 		}
@@ -488,7 +488,7 @@ void MyStrategy::goBackwardToAdv(const Point2D & point, Move& _move)
 	if (self.getDistanceTo(point.getX(), point.getY()) < 10) return;
 
 
-	if (self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1 && d_f <= self.getRadius() + closestFriend->getRadius() + 10) //застряли изза друга - обойдем его
+	if (self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1 && d_f <= self.getRadius() + 10) //застряли изза друга - обойдем его
 	{
 		double  dA = fabs(self.getAngleTo(*closestFriend) - self.getAngleTo(point.getX(), point.getY()));
 		if (dA< PI / 2)
@@ -504,7 +504,7 @@ void MyStrategy::goBackwardToAdv(const Point2D & point, Move& _move)
 			goTo(Point2D(tree.getX(), tree.getY()), _move);
 			_move.setAction(ActionType::ACTION_STAFF);
 		}
-		else if (d_n < 6000 && d_n < self.getRadius() + closestNeutral->getRadius() + 5)
+		else if (d_n < 6000 && d_n < self.getRadius() + 5)
 		{
 			goTangentialFrom(Point2D(closestNeutral->getX(), closestNeutral->getY()), point, _move);
 			setStrafe(_move);
@@ -648,9 +648,16 @@ bool MyStrategy::getBonus(model::Move & _move)
 
 						if ((d_e < 80) && (fabs(fabs(self.getAngleTo(mapSize*0.3, mapSize*0.3) - PI) < game.getStaffSector()))) //если враг близко и бонус с другой стороны
 						{
-							goBackwardToAdv(Point2D(mapSize*0.3, mapSize*0.3), _move);
+							//goBackwardToAdv(Point2D(mapSize*0.3, mapSize*0.3), _move);
+							goTo(Point2D(mapSize*0.3, mapSize*0.3), Point2D(closestEnemy->getX(), closestEnemy->getY()), _move);
 							enemy = closestEnemy;
 							e_d = d_e;
+						}
+						if (d_w < self.getCastRange() + game.getMagicMissileRadius())
+						{
+							goTo(Point2D(mapSize*0.3, mapSize*0.3), Point2D(closestWizard->getX(), closestWizard->getY()), _move);
+							enemy = closestWizard;
+							e_d = d_w;
 						}
 						else
 						{
@@ -659,30 +666,31 @@ bool MyStrategy::getBonus(model::Move & _move)
 							e_d = d_w;
 						}
 						//атакуем, если видим вражеского волшебника
-						if (self.getRemainingActionCooldownTicks() == 0 && e_d < self.getCastRange() && fabs(self.getAngleTo(*enemy)) < game.getStaffSector() / 2.0)
-						{
-							//setStrafe(_move);
-							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 70)
-								_move.setAction(ActionType::ACTION_STAFF);
-							else if (isSkillsEnable && numOfLearnedSkills > frostBoltSkill && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
+						if (e_d < self.getCastRange() + game.getMagicMissileRadius())
+							if (self.getRemainingActionCooldownTicks() == 0 && fabs(self.getAngleTo(*enemy)) < game.getStaffSector() / 2.0)
 							{
-								_move.setAction(ActionType::ACTION_FROST_BOLT);
-								_move.setCastAngle(self.getAngleTo(*enemy));
-								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getFrostBoltRadius());
+								//setStrafe(_move);
+								if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 40)
+									_move.setAction(ActionType::ACTION_STAFF);
+								else if (isSkillsEnable && numOfLearnedSkills > frostBoltSkill && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
+								{
+									_move.setAction(ActionType::ACTION_FROST_BOLT);
+									_move.setCastAngle(self.getAngleTo(*enemy));
+									_move.setMinCastDistance(e_d + game.getFrostBoltRadius());
+								}
+								else if (isSkillsEnable && numOfLearnedSkills > fireballSkill && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
+								{
+									_move.setAction(ActionType::ACTION_FIREBALL);
+									_move.setCastAngle(self.getAngleTo(*enemy));
+									_move.setMinCastDistance(e_d + game.getFireballRadius());
+								}
+								else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
+								{
+									_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
+									_move.setCastAngle(self.getAngleTo(*enemy));
+									_move.setMinCastDistance(e_d + game.getMagicMissileRadius());
+								}
 							}
-							else if (isSkillsEnable && numOfLearnedSkills > fireballSkill && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
-							{
-								_move.setAction(ActionType::ACTION_FIREBALL);
-								_move.setCastAngle(self.getAngleTo(*enemy));
-								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getFireballRadius());
-							}
-							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
-							{
-								_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
-								_move.setCastAngle(self.getAngleTo(*enemy));
-								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getMagicMissileRadius());
-							}
-						}
 						return true;
 					}
 			}
@@ -700,9 +708,16 @@ bool MyStrategy::getBonus(model::Move & _move)
 
 						if ((d_e < 80) && (fabs(fabs(self.getAngleTo(mapSize*0.3, mapSize*0.3) - PI) < game.getStaffSector()))) // враг близко и бонус с другой стороны, то основной враг - он
 						{
-							goBackwardToAdv(Point2D(mapSize*0.7, mapSize*0.7), _move);
+							//goBackwardToAdv(Point2D(mapSize*0.7, mapSize*0.7), _move);
+							goTo(Point2D(mapSize*0.7, mapSize*0.7), Point2D(closestEnemy->getX(), closestEnemy->getY()), _move);
 							enemy = closestEnemy;
 							e_d = d_e;
+						}
+						if (d_w < self.getCastRange() + game.getMagicMissileRadius())
+						{
+							goTo(Point2D(mapSize*0.7, mapSize*0.7), Point2D(closestWizard->getX(), closestWizard->getY()), _move);
+							enemy = closestWizard;
+							e_d = d_w;
 						}
 						else
 						{
@@ -711,31 +726,32 @@ bool MyStrategy::getBonus(model::Move & _move)
 							e_d = d_w;
 						}
 
-						//атакуем, если видим вражеского волшебника					
-						if (self.getRemainingActionCooldownTicks() == 0 && e_d < self.getCastRange() && fabs(self.getAngleTo(*enemy)) < game.getStaffSector() / 2.0)
-						{
-							//setStrafe(_move);
-							if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 70)
-								_move.setAction(ActionType::ACTION_STAFF);
-							else if (isSkillsEnable && numOfLearnedSkills > frostBoltSkill && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
+						//атакуем, если видим вражеского волшебника	
+						if (e_d < self.getCastRange() + game.getMagicMissileRadius())
+							if (self.getRemainingActionCooldownTicks() == 0 && fabs(self.getAngleTo(*enemy)) < game.getStaffSector() / 2.0)
 							{
-								_move.setAction(ActionType::ACTION_FROST_BOLT);
-								_move.setCastAngle(self.getAngleTo(*enemy));
-								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getFrostBoltRadius());
+								//setStrafe(_move);
+								if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_STAFF] == 0 && e_d <= 70)
+									_move.setAction(ActionType::ACTION_STAFF);
+								else if (isSkillsEnable && numOfLearnedSkills > frostBoltSkill && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)
+								{
+									_move.setAction(ActionType::ACTION_FROST_BOLT);
+									_move.setCastAngle(self.getAngleTo(*enemy));
+									_move.setMinCastDistance(e_d + game.getFrostBoltRadius());
+								}
+								else if (isSkillsEnable && numOfLearnedSkills > fireballSkill && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
+								{
+									_move.setAction(ActionType::ACTION_FIREBALL);
+									_move.setCastAngle(self.getAngleTo(*enemy));
+									_move.setMinCastDistance(e_d + game.getFireballRadius());
+								}
+								else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
+								{
+									_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
+									_move.setCastAngle(self.getAngleTo(*enemy));
+									_move.setMinCastDistance(e_d + game.getMagicMissileRadius());
+								}
 							}
-							else if (isSkillsEnable && numOfLearnedSkills > fireballSkill && self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10)
-							{
-								_move.setAction(ActionType::ACTION_FIREBALL);
-								_move.setCastAngle(self.getAngleTo(*enemy));
-								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getFireballRadius());
-							}
-							else if (self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
-							{
-								_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
-								_move.setCastAngle(self.getAngleTo(*enemy));
-								_move.setMinCastDistance(e_d - (*enemy).getRadius() + game.getMagicMissileRadius());
-							}
-						}
 						return true;
 					}
 			}
@@ -780,6 +796,8 @@ void MyStrategy::getTargets()
 	}
 
 	if (targets.size() == 0) return;
+	double minHealth = 1.0;
+
 	double minDist = 6000;
 	double minDist_b = 6000;
 	double minDist_w = 6000;
@@ -793,31 +811,37 @@ void MyStrategy::getTargets()
 		return ( double(u1->getLife())/double(u1->getMaxLife())  <   double(u2->getLife()) / double(u2->getMaxLife()));
 	});
 
-	auto it = targets.begin();
-	while (  it != targets.end() )
-		if ((*it)->getFaction() == self.getFaction() ||
-			((*it)->getDistanceTo(self) > self.getCastRange() + (*it)->getRadius() /*+ game.getMagicMissileRadius()*/) ||
-			(((*it)->getFaction() == Faction::FACTION_NEUTRAL) && (*it)->getSpeedX() == 0 && (*it)->getSpeedY() == 0) && (*it)->getLife() == (*it)->getMaxLife()) {
-			it++;
-		}
-		else 
-			break;
+	//auto it = targets.begin();
+	//while (  it != targets.end() )
+	//	if ((*it)->getFaction() == self.getFaction() ||
+	//		((*it)->getDistanceTo(self) > self.getCastRange() + (*it)->getRadius() /*+ game.getMagicMissileRadius()*/) ||
+	//		(((*it)->getFaction() == Faction::FACTION_NEUTRAL) && (*it)->getSpeedX() == 0 && (*it)->getSpeedY() == 0) && (*it)->getLife() == (*it)->getMaxLife()) {
+	//		it++;
+	//	}
+	//	else 
+	//		break;
 
-	if (it != targets.end())
-		weakestEnemy = *it;
+	//if (it != targets.end())
+	//	weakestEnemy = *it;
 
 	for (auto &u : targets)
 	{
 		if ( u->getFaction() != Faction::FACTION_NEUTRAL && u->getFaction() != self.getFaction() ||
 		    (u->getFaction() == Faction::FACTION_NEUTRAL && ( u->getLife() != u->getMaxLife() || u->getSpeedX() != 0 || u->getSpeedY() != 0)))
 		{
+			if (u->getDistanceTo(self) < self.getCastRange() + u->getRadius() + game.getMagicMissileRadius() && minHealth >= double(u->getLife()) / double(u->getMaxLife()))
+			{
+				minHealth = double(u->getLife()) / double(u->getMaxLife());
+				weakestEnemy = u;
+			}
+
 			if (u->getDistanceTo(self) < minDist)
 			{
 				minDist = u->getDistanceTo(self);
 				closestEnemy = u;
 			}
 		
-			if (u->getMaxLife() >= 1000 && u->getDistanceTo(self) < minDist_b)
+			if (u->getRadius() >= 50 && u->getDistanceTo(self) < minDist_b)
 			{
 				minDist_b = u->getDistanceTo(self);
 				closestBuilding = u;
@@ -856,13 +880,13 @@ void MyStrategy::getTargets()
 		}
 	}
 
-	if (closestFriend != nullptr) d_f   = self.getDistanceTo(*closestFriend);
-	if (closestEnemy != nullptr) d_e    = self.getDistanceTo(*closestEnemy);
-	if (closestBuilding != nullptr) d_b = self.getDistanceTo(*closestBuilding);
-	if (closestWizard != nullptr) d_w   = self.getDistanceTo(*closestWizard);
-	if (closestMinion != nullptr) d_m   = self.getDistanceTo(*closestMinion);
-	if (weakestEnemy != nullptr) d_wt   = self.getDistanceTo(*weakestEnemy);
-	if (closestNeutral != nullptr) d_n  = self.getDistanceTo(*closestNeutral);
+	if (closestFriend != nullptr) d_f   = self.getDistanceTo(*closestFriend) - closestFriend->getRadius();
+	if (closestEnemy != nullptr) d_e    = self.getDistanceTo(*closestEnemy) - closestEnemy->getRadius();
+	if (closestBuilding != nullptr) d_b = self.getDistanceTo(*closestBuilding) - closestBuilding->getRadius();
+	if (closestWizard != nullptr) d_w   = self.getDistanceTo(*closestWizard) - closestWizard->getRadius();
+	if (closestMinion != nullptr) d_m   = self.getDistanceTo(*closestMinion) - closestMinion->getRadius();
+	if (weakestEnemy != nullptr) d_wt   = self.getDistanceTo(*weakestEnemy) - weakestEnemy->getRadius();
+	if (closestNeutral != nullptr) d_n  = self.getDistanceTo(*closestNeutral) - closestFriend->getRadius();
 		
 	return;
 }
@@ -1310,7 +1334,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 				_move.setTurn(angle);
 				_move.setAction(ActionType::ACTION_FROST_BOLT);
 				_move.setCastAngle(self.getAngleTo(enemy));
-				_move.setMinCastDistance(distance+ game.getFrostBoltRadius());
+				_move.setMinCastDistance(distance + game.getFrostBoltRadius());
 				lastDodgeDir *= -1;
 			}
 			else if ((numOfLearnedSkills > fireballSkill) && (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10) &&
@@ -1381,7 +1405,7 @@ void MyStrategy::goToAdv(const Point2D & point, model::Move & _move)
 	if (d_e < 150)
 		goTo(point, Point2D(closestEnemy->getX(), closestEnemy->getY()),_move);
 
-	if ((self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1) && (d_f <= self.getRadius() + closestFriend->getRadius() + 10)) //застряли изза друга - обойдем его
+	if ((self.getDistanceTo(myLastPos.getX(), myLastPos.getY()) < 0.1) && (d_f <= self.getRadius() + 10)) //застряли изза друга - обойдем его
 	{
 		double  dA = fabs(self.getAngleTo(*closestFriend) - self.getAngleTo(point.getX(), point.getY()));
 		if (dA< PI / 2)
@@ -1397,7 +1421,7 @@ void MyStrategy::goToAdv(const Point2D & point, model::Move & _move)
 			goTo(Point2D(tree.getX(), tree.getY()), _move);
 			_move.setAction(ActionType::ACTION_STAFF);
 		}
-		else if ((d_n < 6000) && (d_n < self.getRadius() + closestNeutral->getRadius() + 5))
+		else if ((d_n < 6000) && (d_n < self.getRadius() + 5))
 		{			
 			goTangentialFrom(Point2D(closestNeutral->getX(), closestNeutral->getY()), point, _move);
 			setStrafe(_move);
@@ -1478,21 +1502,6 @@ void MyStrategy::getMessage()
 	}
 }
 
-void MyStrategy::StrategyItself()
-{	
-	Point2D point = Point2D(self.getX(), self.getY());
-	double value;
-	for (int i = 0; i < 10; i++)
-		for (int j = 0; j < 10; j++)
-		{
-			if (isBattle[i][j])
-				if (isBattle[i][j] && value > BattleFieldPriority[i][j] / self.getDistanceTo(i * 800, j * 800))
-				{
-					value = BattleFieldPriority[i][j] / self.getDistanceTo(i * 400, j * 400);
-					point = Point2D(i * 400, j * 400);
-				}
-		}
-}
 
 MyStrategy::MyStrategy() {
 

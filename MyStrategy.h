@@ -161,7 +161,6 @@ protected:
 	void setMessage(model::Move& _move);
 	void getMessage();
 
-	void StrategyItself();
 
 public:
     MyStrategy();
