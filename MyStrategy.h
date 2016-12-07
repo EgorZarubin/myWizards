@@ -104,6 +104,9 @@ protected:
 	__int16 BattleFieldPriority[10][10];
 	Point2D battlePoint;
 
+	Point2D returnPoint;
+	bool returnToBattle;
+
 	model::Wizard self;
 	model::World world;
 	model::Game game;
@@ -131,10 +134,13 @@ protected:
 	void initializeTick(const model::Wizard& _self, const model::World& _world, const model::Game& _game, const model::Move& _move);
 	Point2D getNextWaypoint();
 	Point2D getPreviousWaypoint();
+	
 	void getBattleField();
+		
 
 	void goTo(const Point2D & point, model::Move& _move);
 	void goTo_wow(const Point2D & point, model::Move& _move);
+	void goToThroughThrForest(const Point2D & point, model::Move& _move);
 	void goTo(const Point2D & point,const Point2D & lookAt, model::Move& _move);
 	void goToAdv(const Point2D & point, model::Move& _move);
 	void goBackwardTo(const Point2D & point, model::Move& _move);
@@ -145,6 +151,8 @@ protected:
 	
 	int getCloseToBonus(model::Move& _move);
 	bool getBonus(model::Move& _move);
+	void defineReturnPoint();
+	
 	void getTargets();
 	model::Tree getClosestTree();	
 
