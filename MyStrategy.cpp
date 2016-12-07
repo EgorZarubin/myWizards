@@ -794,11 +794,15 @@ void MyStrategy::getTargets()
 	});
 
 	auto it = targets.begin();
-	while (it != targets.end() && ((*it)->getFaction() == self.getFaction() || 
-		  ((*it)->getDistanceTo(self) > self.getCastRange()  + (*it)->getRadius()) ||
-		   ((*it)->getFaction() == Faction::FACTION_NEUTRAL) && (*it)->getSpeedX() == 0 && (*it)->getSpeedY() == 0) && (*it)->getLife() == (*it)->getMaxLife()){
-		it++;
-	}
+	while (  it != targets.end() )
+		if ((*it)->getFaction() == self.getFaction() ||
+			((*it)->getDistanceTo(self) > self.getCastRange() + (*it)->getRadius() /*+ game.getMagicMissileRadius()*/) ||
+			(((*it)->getFaction() == Faction::FACTION_NEUTRAL) && (*it)->getSpeedX() == 0 && (*it)->getSpeedY() == 0) && (*it)->getLife() == (*it)->getMaxLife()) {
+			it++;
+		}
+		else 
+			break;
+
 	if (it != targets.end())
 		weakestEnemy = *it;
 
@@ -1199,7 +1203,6 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 	double angle = _self.getAngleTo(enemy);
 
 	//////////////////предсказываем где будет юнит через премя которое летит ракета
-
 	if (ALLOW_PREDICTION)
 	{
 		double tRocket = distance / game.getMagicMissileSpeed();
@@ -1241,7 +1244,7 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 				_move.setTurn(angle);
 				_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
 				_move.setCastAngle(angle);
-				_move.setMinCastDistance(distance - enemy.getRadius() + _game.getMagicMissileRadius());
+				_move.setMinCastDistance(distance + _game.getMagicMissileRadius()); //ракета станивится активной внутри юнита
 				lastDodgeDir *= -1;
 			}
 			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12 && !keepGoing)
@@ -1307,7 +1310,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 				_move.setTurn(angle);
 				_move.setAction(ActionType::ACTION_FROST_BOLT);
 				_move.setCastAngle(self.getAngleTo(enemy));
-				_move.setMinCastDistance(distance - (enemy).getRadius() + game.getFrostBoltRadius());
+				_move.setMinCastDistance(distance+ game.getFrostBoltRadius());
 				lastDodgeDir *= -1;
 			}
 			else if ((numOfLearnedSkills > fireballSkill) && (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10) &&
@@ -1317,7 +1320,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 				_move.setTurn(angle);
 				_move.setAction(ActionType::ACTION_FIREBALL);
 				_move.setCastAngle(angle);
-				_move.setMinCastDistance(distance - enemy.getRadius() + _game.getFireballRadius());
+				_move.setMinCastDistance(distance + _game.getFireballRadius());
 				lastDodgeDir *= -1;
 			}
 			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
@@ -1325,7 +1328,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 				_move.setTurn(angle);
 				_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
 				_move.setCastAngle(angle);
-				_move.setMinCastDistance(distance - enemy.getRadius() + _game.getMagicMissileRadius());
+				_move.setMinCastDistance(distance + _game.getMagicMissileRadius());
 				lastDodgeDir *= -1;
 			}
 			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12 && !keepGoing)
