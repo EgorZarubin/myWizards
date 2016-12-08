@@ -125,6 +125,7 @@ protected:
 	double d_f, d_e, d_w, d_b, d_m, d_wt, d_n;
 
 	Point2D myLastPos;
+	Point2D myLastPos_5;
 	Point2D posBeforeBonus;
 	bool returnToLastPos;
 
