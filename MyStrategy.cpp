@@ -187,7 +187,7 @@ void MyStrategy::move(const Wizard& _self, const World& _world, const Game& _gam
 	}
 	
 	// приоритет атаки. сейчас это: совсем близкие чуваки, волшебники, самые слабые типы, башни, миньоны
-	if (d_e < _self.getCastRange() + game.getMagicMissileRadius()) //если хоть кто то в пределах досягаемости
+	if (d_e < _self.getCastRange() + game.getMagicMissileRadius()-1) //если хоть кто то в пределах досягаемости
 	{
 		_move.setSpeed(0);
 		LivingUnit enemy = *closestEnemy;
@@ -652,7 +652,7 @@ bool MyStrategy::getBonus(model::Move & _move)
 	if (bonuses.size() != 0)
 	{
 		//если мы близко к бонусу, скорее всего бы его и подобрали
-		if (d1 < self.getRadius() + game.getBonusRadius() + 4.0 || d1 < self.getRadius() + game.getBonusRadius() + 4.0) 
+		if (d1 < self.getRadius() + game.getBonusRadius() + 4.0 || d2 < self.getRadius() + game.getBonusRadius() + 4.0) 
 			underBonus = true;
 
 		if (bonuses.size() == 1)
@@ -1375,7 +1375,8 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 	}
 
 	double distance = _self.getDistanceTo(enemy) - enemy.getRadius() ;
-	double angle = _self.getAngleTo(enemy);
+	double castDistance = distance + game.getMagicMissileRadius() > self.getCastRange() ? self.getCastRange() - 1 : distance + game.getMagicMissileRadius();
+ 	double angle = _self.getAngleTo(enemy);
 
 	//////////////////предсказываем где будет юнит через премя которое летит ракета
 	if (ALLOW_PREDICTION)
@@ -1419,7 +1420,7 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 				_move.setTurn(angle);
 				_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
 				_move.setCastAngle(angle);
-				_move.setMinCastDistance(distance + _game.getMagicMissileRadius()); //ракета станивится активной внутри юнита
+				_move.setMinCastDistance(castDistance); //ракета станивится активной внутри юнита
 				lastDodgeDir *= -1;
 			}
 			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12 && !keepGoing)
@@ -1440,6 +1441,7 @@ void MyStrategy::attackEnemy(const Wizard& _self, const World& _world, const Gam
 void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World & _world, const model::Game & _game, model::Move & _move, const model::LivingUnit & enemy)
 {
 	double distance = _self.getDistanceTo(enemy) - enemy.getRadius();
+	double castDistance = distance + game.getMagicMissileRadius() > self.getCastRange() ? self.getCastRange() - 1 : distance + game.getMagicMissileRadius();
 	double angle = _self.getAngleTo(enemy);
 	//setStrafe(_move);
 	
@@ -1480,22 +1482,24 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 				return;
 			}
 			else if ((numOfLearnedSkills > frostBoltSkill) && (enemy.getLife() > 0.50) && enemy.getRadius() <= 35 &&
-				(self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0))
+				(self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FROST_BOLT] == 0)&&
+				(self.getMana() > game.getMagicMissileManacost()))
 			{
 				_move.setTurn(angle);
 				_move.setAction(ActionType::ACTION_FROST_BOLT);
 				_move.setCastAngle(self.getAngleTo(enemy));
-				_move.setMinCastDistance(distance + game.getFrostBoltRadius());
+				_move.setMinCastDistance(castDistance);
 				lastDodgeDir *= -1;
 			}
 			else if ((numOfLearnedSkills > fireballSkill) && (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] > 10) &&
 				(self.getRemainingCooldownTicksByAction()[ActionType::ACTION_FIREBALL] == 0) &&
+				(self.getMana() > game.getFireballManacost()) &&
 				distance > 300)
 			{
 				_move.setTurn(angle);
 				_move.setAction(ActionType::ACTION_FIREBALL);
 				_move.setCastAngle(angle);
-				_move.setMinCastDistance(distance + _game.getFireballRadius());
+				_move.setMinCastDistance(castDistance);
 				lastDodgeDir *= -1;
 			}
 			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] == 0)
@@ -1503,7 +1507,7 @@ void MyStrategy::attackEnemyAdv(const model::Wizard & _self, const model::World 
 				_move.setTurn(angle);
 				_move.setAction(ActionType::ACTION_MAGIC_MISSILE);
 				_move.setCastAngle(angle);
-				_move.setMinCastDistance(distance + _game.getMagicMissileRadius());
+				_move.setMinCastDistance(castDistance);
 				lastDodgeDir *= -1;
 			}
 			else if (_self.getRemainingCooldownTicksByAction()[ActionType::ACTION_MAGIC_MISSILE] < 12 && !keepGoing)
