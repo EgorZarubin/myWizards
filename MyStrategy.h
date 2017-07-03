@@ -157,9 +157,9 @@ protected:
 	void getTargets();
 	model::Tree getClosestTree();	
 
-	void attackEnemy(const model::Wizard& _self, const model::World& _world, const model::Game& _game, model::Move& _move, const model::LivingUnit& enemy);
-	void attackEnemyAdv(const model::Wizard& _self, const model::World& _world, const model::Game& _game, model::Move& _move, const model::LivingUnit& enemy);
-	void dodgeFrom(const model::Wizard& _self, const model::World& _world, const model::Game& _game, model::Move& _move, const model::LivingUnit& enemy);
+	void attackEnemy(model::Move& _move, const model::LivingUnit& enemy);
+	void attackEnemyAdv(model::Move& _move, const model::LivingUnit& enemy);
+	void dodgeFrom(model::Move& _move, const model::LivingUnit& enemy);
 	void setStrafe(model::Move& _move);
 	
 	void fillTheMap();
